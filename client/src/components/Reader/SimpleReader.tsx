@@ -152,7 +152,7 @@ export function SimpleReader({
       onPageChange(newPage);
       setIsFlipping(false);
       setFlipDirection(null);
-    }, 700);
+    }, 500);
   }, [currentPage, totalPages, isWideScreen, onPageChange, isFlipping]);
 
   const handlePrev = useCallback(() => {
@@ -168,7 +168,7 @@ export function SimpleReader({
       onPageChange(newPage);
       setIsFlipping(false);
       setFlipDirection(null);
-    }, 700);
+    }, 500);
   }, [currentPage, isWideScreen, onPageChange, isFlipping]);
 
   // Get page content by index
