@@ -14,7 +14,15 @@ import {
   Type,
 } from 'lucide-react';
 import { Modal } from '../common';
-import type { PageContent, ReadingMode, ReaderSettings, Bookmark as BookmarkType } from '../../types';
+import type { PageContent, ReadingMode, ReaderSettings, Bookmark as BookmarkType, FontFamily } from '../../types';
+
+// Font family mappings
+const fontFamilies: Record<FontFamily, { name: string; css: string }> = {
+  serif: { name: 'Merriweather', css: 'Merriweather, Georgia, serif' },
+  sans: { name: 'Inter', css: 'Inter, system-ui, sans-serif' },
+  georgia: { name: 'Georgia', css: 'Georgia, Times New Roman, serif' },
+  literata: { name: 'Literata', css: 'Literata, Georgia, serif' },
+};
 
 // Debounce hook
 function useDebounce<T>(value: T, delay: number): T {
@@ -199,12 +207,10 @@ export function SimpleReader({
               className={`flex-1 ${styles.pageBg} rounded-lg shadow-2xl overflow-hidden flex flex-col`}
             >
               <div
-                className={`flex-1 p-4 md:p-6 lg:p-8 overflow-auto ${styles.text}`}
+                className={`flex-1 px-8 md:px-12 lg:px-16 py-6 overflow-auto ${styles.text}`}
                 style={{
                   fontSize: `${localFontSize}px`,
-                  fontFamily: settings.fontFamily === 'serif'
-                    ? 'Merriweather, Georgia, serif'
-                    : 'Inter, system-ui, sans-serif',
+                  fontFamily: fontFamilies[settings.fontFamily].css,
                   lineHeight: settings.lineHeight,
                 }}
               >
@@ -343,27 +349,21 @@ export function SimpleReader({
             <label className="block text-sm font-medium text-slate-300 mb-2">
               Font Family
             </label>
-            <div className="flex gap-2">
-              <button
-                onClick={() => onSettingsChange({ fontFamily: 'serif' })}
-                className={`flex-1 py-2 rounded-lg font-serif transition-colors ${
-                  settings.fontFamily === 'serif'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                }`}
-              >
-                Serif
-              </button>
-              <button
-                onClick={() => onSettingsChange({ fontFamily: 'sans' })}
-                className={`flex-1 py-2 rounded-lg font-sans transition-colors ${
-                  settings.fontFamily === 'sans'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                }`}
-              >
-                Sans-serif
-              </button>
+            <div className="grid grid-cols-2 gap-2">
+              {(Object.keys(fontFamilies) as FontFamily[]).map((font) => (
+                <button
+                  key={font}
+                  onClick={() => onSettingsChange({ fontFamily: font })}
+                  className={`py-2 px-3 rounded-lg transition-colors ${
+                    settings.fontFamily === font
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  }`}
+                  style={{ fontFamily: fontFamilies[font].css }}
+                >
+                  {fontFamilies[font].name}
+                </button>
+              ))}
             </div>
           </div>
 

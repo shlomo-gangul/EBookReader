@@ -64,10 +64,12 @@ export interface User {
 
 export type ReadingMode = 'day' | 'night' | 'sepia';
 
+export type FontFamily = 'serif' | 'sans' | 'georgia' | 'literata';
+
 export interface ReaderSettings {
   mode: ReadingMode;
   fontSize: number;
-  fontFamily: 'serif' | 'sans';
+  fontFamily: FontFamily;
   lineHeight: number;
   marginSize: 'small' | 'medium' | 'large';
 }
