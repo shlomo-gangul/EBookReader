@@ -86,6 +86,8 @@ export function SimpleReader({
   const [showBookmarks, setShowBookmarks] = useState(false);
   const [isWideScreen, setIsWideScreen] = useState(window.innerWidth >= 900);
   const [localFontSize, setLocalFontSize] = useState(settings.fontSize);
+  const [isFlipping, setIsFlipping] = useState(false);
+  const [flipDirection, setFlipDirection] = useState<'left' | 'right'>('right');
   const debouncedFontSize = useDebounce(localFontSize, 150);
 
   const styles = modeStyles[settings.mode];
@@ -130,22 +132,38 @@ export function SimpleReader({
   }, [currentPage, totalPages]);
 
   const handleNext = useCallback(() => {
+    if (isFlipping) return;
     const increment = isWideScreen ? 2 : 1;
-    if (currentPage + increment <= totalPages) {
-      onPageChange(currentPage + increment);
-    } else if (currentPage < totalPages) {
-      onPageChange(totalPages);
+    if (currentPage < totalPages) {
+      setFlipDirection('right');
+      setIsFlipping(true);
+      setTimeout(() => {
+        if (currentPage + increment <= totalPages) {
+          onPageChange(currentPage + increment);
+        } else {
+          onPageChange(totalPages);
+        }
+        setIsFlipping(false);
+      }, 300);
     }
-  }, [currentPage, totalPages, isWideScreen, onPageChange]);
+  }, [currentPage, totalPages, isWideScreen, onPageChange, isFlipping]);
 
   const handlePrev = useCallback(() => {
+    if (isFlipping) return;
     const decrement = isWideScreen ? 2 : 1;
-    if (currentPage - decrement >= 1) {
-      onPageChange(currentPage - decrement);
-    } else {
-      onPageChange(1);
+    if (currentPage > 1) {
+      setFlipDirection('left');
+      setIsFlipping(true);
+      setTimeout(() => {
+        if (currentPage - decrement >= 1) {
+          onPageChange(currentPage - decrement);
+        } else {
+          onPageChange(1);
+        }
+        setIsFlipping(false);
+      }, 300);
     }
-  }, [currentPage, isWideScreen, onPageChange]);
+  }, [currentPage, isWideScreen, onPageChange, isFlipping]);
 
   const getCurrentPages = () => {
     const idx = currentPage - 1;
@@ -199,12 +217,20 @@ export function SimpleReader({
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 flex items-stretch px-4 md:px-8 py-4 overflow-hidden">
-        <div className="flex gap-4 h-full w-full">
-          {currentPages.map((page) => (
+      <div className="flex-1 flex items-stretch px-4 md:px-8 py-4 overflow-hidden relative">
+        <div
+          className={`flex gap-4 h-full w-full transition-all duration-300 ease-in-out ${
+            isFlipping
+              ? flipDirection === 'right'
+                ? 'opacity-0 translate-x-4'
+                : 'opacity-0 -translate-x-4'
+              : 'opacity-100 translate-x-0'
+          }`}
+        >
+          {currentPages.map((page, idx) => (
             <div
               key={page.pageNumber}
-              className={`flex-1 ${styles.pageBg} rounded-lg shadow-2xl overflow-hidden flex flex-col`}
+              className={`flex-1 ${styles.pageBg} rounded-lg shadow-2xl overflow-hidden flex flex-col relative`}
             >
               <div
                 className={`flex-1 px-8 md:px-12 lg:px-16 py-6 overflow-auto ${styles.text}`}
@@ -222,28 +248,43 @@ export function SimpleReader({
                   </div>
                 )}
               </div>
-              <div className={`text-center py-1 text-xs ${styles.text} opacity-50 border-t border-current/10`}>
-                {page.pageNumber}
+
+              {/* Page number and navigation at bottom */}
+              <div className={`flex items-center justify-between px-4 py-2 border-t border-current/10 ${styles.text}`}>
+                {/* Prev button - show on first page only */}
+                {idx === 0 ? (
+                  <button
+                    onClick={handlePrev}
+                    disabled={currentPage <= 1}
+                    className="flex items-center gap-1 text-sm opacity-60 hover:opacity-100 disabled:opacity-20 transition-opacity"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    <span className="hidden sm:inline">Prev</span>
+                  </button>
+                ) : (
+                  <div />
+                )}
+
+                {/* Page number */}
+                <span className="text-xs opacity-50">{page.pageNumber}</span>
+
+                {/* Next button - show on last visible page only */}
+                {idx === currentPages.length - 1 ? (
+                  <button
+                    onClick={handleNext}
+                    disabled={currentPage >= totalPages}
+                    className="flex items-center gap-1 text-sm opacity-60 hover:opacity-100 disabled:opacity-20 transition-opacity"
+                  >
+                    <span className="hidden sm:inline">Next</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <div />
+                )}
               </div>
             </div>
           ))}
         </div>
-
-        {/* Navigation Buttons */}
-        <button
-          onClick={handlePrev}
-          disabled={currentPage <= 1}
-          className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 p-2 md:p-4 rounded-full bg-black/30 hover:bg-black/50 text-white disabled:opacity-20 transition-all"
-        >
-          <ChevronLeft className="w-6 h-6 md:w-8 md:h-8" />
-        </button>
-        <button
-          onClick={handleNext}
-          disabled={currentPage >= totalPages}
-          className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 p-2 md:p-4 rounded-full bg-black/30 hover:bg-black/50 text-white disabled:opacity-20 transition-all"
-        >
-          <ChevronRight className="w-6 h-6 md:w-8 md:h-8" />
-        </button>
       </div>
 
       {/* Bottom Bar */}
