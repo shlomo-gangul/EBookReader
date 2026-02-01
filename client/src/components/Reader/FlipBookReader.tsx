@@ -234,24 +234,38 @@ export function FlipBookReader({
       >
         {pages.length > 0 && bookSize.width > 0 && (
           <div className="relative">
-            {/* Book cover behind pages */}
+            {/* Left cover */}
             <div
-              className="absolute rounded-sm"
+              className="absolute"
               style={{
-                top: -8,
-                left: -12,
-                right: -12,
-                bottom: -8,
-                background: 'linear-gradient(90deg, #8B4513 0%, #A0522D 10%, #8B4513 50%, #A0522D 90%, #8B4513 100%)',
-                boxShadow: '0 10px 40px rgba(0,0,0,0.4), inset 0 0 20px rgba(0,0,0,0.3)',
-                borderRadius: '4px 8px 8px 4px',
+                top: -6,
+                left: -15,
+                bottom: -6,
+                width: '51%',
+                background: 'linear-gradient(90deg, #654321 0%, #8B4513 20%, #7a3d12 100%)',
+                borderRadius: '4px 0 0 4px',
+                boxShadow: '-5px 8px 20px rgba(0,0,0,0.4)',
               }}
             />
-            {/* Spine */}
+            {/* Right cover */}
             <div
-              className="absolute top-0 bottom-0 w-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none"
+              className="absolute"
               style={{
-                background: 'linear-gradient(90deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.2) 100%)',
+                top: -6,
+                right: -15,
+                bottom: -6,
+                width: '51%',
+                background: 'linear-gradient(90deg, #7a3d12 0%, #8B4513 80%, #654321 100%)',
+                borderRadius: '0 4px 4px 0',
+                boxShadow: '5px 8px 20px rgba(0,0,0,0.4)',
+              }}
+            />
+            {/* Spine/binding in center */}
+            <div
+              className="absolute top-0 bottom-0 w-6 left-1/2 -translate-x-1/2 z-10 pointer-events-none"
+              style={{
+                background: 'linear-gradient(90deg, #3d2314 0%, #5c3a1d 30%, #4a2c17 50%, #5c3a1d 70%, #3d2314 100%)',
+                boxShadow: 'inset 0 0 10px rgba(0,0,0,0.5)',
               }}
             />
             <HTMLFlipBook
