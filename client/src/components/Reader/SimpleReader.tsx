@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -11,9 +11,25 @@ import {
   X,
   Plus,
   Minus,
+  Type,
 } from 'lucide-react';
 import { Modal } from '../common';
 import type { PageContent, ReadingMode, ReaderSettings, Bookmark as BookmarkType } from '../../types';
+
+// Debounce hook
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 interface SimpleReaderProps {
   pages: PageContent[];
@@ -61,10 +77,24 @@ export function SimpleReader({
   const [showSettings, setShowSettings] = useState(false);
   const [showBookmarks, setShowBookmarks] = useState(false);
   const [isWideScreen, setIsWideScreen] = useState(window.innerWidth >= 900);
+  const [localFontSize, setLocalFontSize] = useState(settings.fontSize);
+  const debouncedFontSize = useDebounce(localFontSize, 150);
 
   const styles = modeStyles[settings.mode];
   const progress = totalPages > 0 ? (currentPage / totalPages) * 100 : 0;
   const isBookmarked = bookmarks.some((b) => b.page === currentPage);
+
+  // Sync debounced font size to settings
+  useEffect(() => {
+    if (debouncedFontSize !== settings.fontSize) {
+      onSettingsChange({ fontSize: debouncedFontSize });
+    }
+  }, [debouncedFontSize, settings.fontSize, onSettingsChange]);
+
+  // Sync local font size when settings change externally
+  useEffect(() => {
+    setLocalFontSize(settings.fontSize);
+  }, [settings.fontSize]);
 
   // Check for wide screen
   useEffect(() => {
@@ -161,17 +191,17 @@ export function SimpleReader({
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 flex items-center justify-center p-4 overflow-hidden">
-        <div className={`flex gap-4 h-full max-h-[80vh] ${isWideScreen ? 'max-w-5xl' : 'max-w-xl'} w-full`}>
-          {currentPages.map((page, idx) => (
+      <div className="flex-1 flex items-center justify-center px-12 md:px-20 py-4 overflow-hidden">
+        <div className={`flex gap-6 h-full ${isWideScreen ? 'max-w-6xl' : 'max-w-2xl'} w-full`}>
+          {currentPages.map((page) => (
             <div
               key={page.pageNumber}
               className={`flex-1 ${styles.pageBg} rounded-lg shadow-2xl overflow-hidden flex flex-col`}
             >
               <div
-                className={`flex-1 p-6 md:p-8 overflow-y-auto ${styles.text}`}
+                className={`flex-1 p-4 md:p-6 lg:p-8 overflow-hidden ${styles.text}`}
                 style={{
-                  fontSize: `${settings.fontSize}px`,
+                  fontSize: `${localFontSize}px`,
                   fontFamily: settings.fontFamily === 'serif'
                     ? 'Merriweather, Georgia, serif'
                     : 'Inter, system-ui, sans-serif',
@@ -179,14 +209,14 @@ export function SimpleReader({
                 }}
               >
                 {page.content ? (
-                  <div className="whitespace-pre-wrap">{page.content}</div>
+                  <div className="whitespace-pre-wrap overflow-hidden h-full">{page.content}</div>
                 ) : (
                   <div className="flex items-center justify-center h-full text-slate-400">
                     Page {page.pageNumber}
                   </div>
                 )}
               </div>
-              <div className={`text-center py-2 text-sm ${styles.text} opacity-50`}>
+              <div className={`text-center py-1 text-xs ${styles.text} opacity-50 border-t border-current/10`}>
                 {page.pageNumber}
               </div>
             </div>
@@ -220,9 +250,36 @@ export function SimpleReader({
           />
         </div>
 
-        <div className="flex items-center justify-between text-white text-sm">
-          <span>Page {currentPage} of {totalPages}</span>
-          <span>{Math.round(progress)}% complete</span>
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-white text-sm whitespace-nowrap">
+            Page {currentPage} of {totalPages}
+          </span>
+
+          {/* Font Size Slider */}
+          <div className="flex items-center gap-2 flex-1 max-w-xs">
+            <Type className="w-4 h-4 text-white/70" />
+            <input
+              type="range"
+              min={12}
+              max={24}
+              value={localFontSize}
+              onChange={(e) => setLocalFontSize(parseInt(e.target.value, 10))}
+              className="flex-1 h-1.5 bg-white/20 rounded-full appearance-none cursor-pointer
+                [&::-webkit-slider-thumb]:appearance-none
+                [&::-webkit-slider-thumb]:w-4
+                [&::-webkit-slider-thumb]:h-4
+                [&::-webkit-slider-thumb]:rounded-full
+                [&::-webkit-slider-thumb]:bg-blue-500
+                [&::-webkit-slider-thumb]:cursor-pointer
+                [&::-webkit-slider-thumb]:transition-transform
+                [&::-webkit-slider-thumb]:hover:scale-110"
+            />
+            <span className="text-white/70 text-xs w-8">{localFontSize}px</span>
+          </div>
+
+          <span className="text-white text-sm whitespace-nowrap">
+            {Math.round(progress)}%
+          </span>
         </div>
       </div>
 

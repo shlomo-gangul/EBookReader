@@ -50,9 +50,9 @@ export function getReaderSettings(): ReaderSettings {
   // Default settings
   return {
     mode: 'day',
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: 'serif',
-    lineHeight: 1.8,
+    lineHeight: 1.6,
     marginSize: 'medium',
   };
 }
