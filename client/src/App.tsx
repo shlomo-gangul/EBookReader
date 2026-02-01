@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { useState, useCallback } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import { BookOpen, Upload, Library, Menu, X } from 'lucide-react';
 import { SearchBar, BookGrid } from './components/Library';
 import { BookReader } from './components/Reader';
@@ -10,7 +10,6 @@ import { useBookStore } from './store';
 import type { Book } from './types';
 
 function HomePage() {
-  const navigate = useNavigate();
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const { recentBooks } = useBookStore();
   const { books, isLoading, hasMore, search, loadMore, clearSearch } = useLibrary();

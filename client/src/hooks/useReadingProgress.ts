@@ -1,6 +1,5 @@
 import { useCallback, useEffect } from 'react';
 import { useBookStore } from '../store';
-import * as cacheService from '../services/cacheService';
 import type { ReadingProgress, Bookmark } from '../types';
 
 interface UseReadingProgressReturn {

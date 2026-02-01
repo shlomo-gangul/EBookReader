@@ -24,7 +24,6 @@ export function useBookReader(): UseBookReaderReturn {
   const pdfDocRef = useRef<PdfDocument | null>(null);
 
   const {
-    currentBook,
     currentPage,
     totalPages,
     setCurrentBook,

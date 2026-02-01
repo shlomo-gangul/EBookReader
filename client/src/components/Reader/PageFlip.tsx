@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
+// @ts-expect-error - page-flip doesn't have type declarations
 import { PageFlip as StPageFlip } from 'page-flip';
 import type { PageContent, ReadingMode } from '../../types';
 

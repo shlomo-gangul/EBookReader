@@ -1,4 +1,3 @@
-import React from 'react';
 import { BookCard } from './BookCard';
 import { Spinner } from '../common';
 import type { Book } from '../../types';

@@ -53,7 +53,7 @@ export async function loadPdf(source: File | string): Promise<PdfDocument> {
         getTextContent: async () => {
           const textContent = await page.getTextContent();
           return textContent.items
-            .map((item: { str?: string }) => item.str || '')
+            .map((item) => ('str' in item ? item.str : ''))
             .join(' ');
         },
       };

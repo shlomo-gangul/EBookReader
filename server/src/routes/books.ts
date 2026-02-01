@@ -23,7 +23,8 @@ router.get('/search', async (req, res) => {
       return res.json(cached);
     }
 
-    let allBooks: ReturnType<typeof openLibrary.transformToBook>[] = [];
+    type BookType = ReturnType<typeof openLibrary.transformToBook> | ReturnType<typeof gutenberg.transformToBook>;
+    let allBooks: BookType[] = [];
     let total = 0;
     let hasMore = false;
 
