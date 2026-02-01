@@ -114,24 +114,27 @@ export function FlipBookReader({
   useEffect(() => {
     const updateSize = () => {
       if (containerRef.current) {
-        const containerWidth = containerRef.current.clientWidth - 32; // padding
-        const containerHeight = containerRef.current.clientHeight - 32;
+        const containerWidth = containerRef.current.clientWidth - 16;
+        const containerHeight = containerRef.current.clientHeight - 16;
 
-        // For two-page spread, each page is half the container width
-        const pageWidth = Math.min(550, (containerWidth - 20) / 2);
-        const pageHeight = Math.min(700, containerHeight);
+        // Each page takes up to half the container width (for two-page spread)
+        const maxPageWidth = (containerWidth / 2) - 10;
+        const maxPageHeight = containerHeight;
 
-        // Maintain aspect ratio
-        const aspectRatio = 550 / 700;
-        let finalWidth = pageWidth;
-        let finalHeight = pageWidth / aspectRatio;
+        // Maintain book aspect ratio (roughly 3:4)
+        const aspectRatio = 3 / 4;
+        let finalWidth = maxPageWidth;
+        let finalHeight = maxPageWidth / aspectRatio;
 
-        if (finalHeight > pageHeight) {
-          finalHeight = pageHeight;
-          finalWidth = pageHeight * aspectRatio;
+        if (finalHeight > maxPageHeight) {
+          finalHeight = maxPageHeight;
+          finalWidth = maxPageHeight * aspectRatio;
         }
 
-        setBookSize({ width: Math.floor(finalWidth), height: Math.floor(finalHeight) });
+        setBookSize({
+          width: Math.floor(Math.max(300, finalWidth)),
+          height: Math.floor(Math.max(400, finalHeight))
+        });
       }
     };
 
@@ -228,7 +231,7 @@ export function FlipBookReader({
       {/* Book Container */}
       <div
         ref={containerRef}
-        className="flex-1 flex items-center justify-center p-4 overflow-hidden"
+        className="flex-1 flex items-center justify-center p-2 overflow-hidden"
       >
         {pages.length > 0 && bookSize.width > 0 && (
           <HTMLFlipBook
@@ -237,9 +240,9 @@ export function FlipBookReader({
             height={bookSize.height}
             size="stretch"
             minWidth={300}
-            maxWidth={600}
+            maxWidth={1000}
             minHeight={400}
-            maxHeight={800}
+            maxHeight={1200}
             drawShadow={true}
             flippingTime={500}
             usePortrait={true}
