@@ -110,29 +110,24 @@ export function FlipBookReader({
   const progress = totalPages > 0 ? (currentPage / totalPages) * 100 : 0;
   const isBookmarked = bookmarks.some((b) => b.page === currentPage);
 
-  // Calculate book size based on container - use 90% of available space
+  // Calculate book size based on container - height first, then width from book ratio
   useEffect(() => {
     const updateSize = () => {
       if (containerRef.current) {
-        const containerWidth = containerRef.current.clientWidth;
         const containerHeight = containerRef.current.clientHeight;
+        const containerWidth = containerRef.current.clientWidth;
 
-        // Use 90% of container, leave some margin
-        const availableWidth = containerWidth * 0.90;
-        const availableHeight = containerHeight * 0.90;
+        // Standard book page ratio is roughly 6:9 (width:height) or 2:3
+        const bookRatio = 6 / 9; // width = height * 0.667
 
-        // For two-page spread: each page is half the width
-        // Page aspect ratio is roughly 2:3 (width:height)
-        const pageAspectRatio = 2 / 3;
+        // Use 90% of container height
+        let pageHeight = containerHeight * 0.90;
+        let pageWidth = pageHeight * bookRatio;
 
-        // Calculate based on height first (usually the constraint)
-        let pageHeight = availableHeight;
-        let pageWidth = pageHeight * pageAspectRatio;
-
-        // If two pages side by side exceed available width, scale down
-        if (pageWidth * 2 > availableWidth) {
-          pageWidth = availableWidth / 2;
-          pageHeight = pageWidth / pageAspectRatio;
+        // Make sure two pages fit in the width
+        if (pageWidth * 2 > containerWidth * 0.95) {
+          pageWidth = (containerWidth * 0.95) / 2;
+          pageHeight = pageWidth / bookRatio;
         }
 
         setBookSize({
