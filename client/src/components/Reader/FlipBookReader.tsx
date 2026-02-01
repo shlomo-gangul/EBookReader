@@ -110,36 +110,34 @@ export function FlipBookReader({
   const progress = totalPages > 0 ? (currentPage / totalPages) * 100 : 0;
   const isBookmarked = bookmarks.some((b) => b.page === currentPage);
 
-  // Calculate book size based on container
+  // Calculate book size based on container - use 90% of available space
   useEffect(() => {
     const updateSize = () => {
       if (containerRef.current) {
-        const containerWidth = containerRef.current.clientWidth - 40;
-        const containerHeight = containerRef.current.clientHeight - 40;
+        const containerWidth = containerRef.current.clientWidth;
+        const containerHeight = containerRef.current.clientHeight;
 
-        // Each page takes up to half the container width (for two-page spread)
-        // So total book width = containerWidth, each page = containerWidth / 2
-        const maxPageWidth = Math.floor(containerWidth / 2);
-        const maxPageHeight = containerHeight;
+        // Use 90% of container, leave some margin
+        const availableWidth = containerWidth * 0.95;
+        const availableHeight = containerHeight * 0.95;
 
-        // Maintain book aspect ratio (roughly 3:4)
-        const aspectRatio = 3 / 4;
-        let finalWidth = maxPageWidth;
-        let finalHeight = finalWidth / aspectRatio;
+        // For two-page spread: each page is half the width
+        // Page aspect ratio is roughly 2:3 (width:height)
+        const pageAspectRatio = 2 / 3;
 
-        // If height exceeds container, scale down based on height
-        if (finalHeight > maxPageHeight) {
-          finalHeight = maxPageHeight;
-          finalWidth = finalHeight * aspectRatio;
+        // Calculate based on height first (usually the constraint)
+        let pageHeight = availableHeight;
+        let pageWidth = pageHeight * pageAspectRatio;
+
+        // If two pages side by side exceed available width, scale down
+        if (pageWidth * 2 > availableWidth) {
+          pageWidth = availableWidth / 2;
+          pageHeight = pageWidth / pageAspectRatio;
         }
 
-        // Clamp to reasonable bounds
-        finalWidth = Math.min(Math.max(280, finalWidth), 600);
-        finalHeight = Math.min(Math.max(380, finalHeight), 800);
-
         setBookSize({
-          width: Math.floor(finalWidth),
-          height: Math.floor(finalHeight)
+          width: Math.floor(pageWidth),
+          height: Math.floor(pageHeight)
         });
       }
     };
@@ -245,10 +243,10 @@ export function FlipBookReader({
             width={bookSize.width}
             height={bookSize.height}
             size="stretch"
-            minWidth={280}
-            maxWidth={600}
-            minHeight={380}
-            maxHeight={800}
+            minWidth={200}
+            maxWidth={1500}
+            minHeight={300}
+            maxHeight={2000}
             drawShadow={true}
             flippingTime={500}
             usePortrait={true}
