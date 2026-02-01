@@ -66,35 +66,17 @@ const Page = forwardRef<HTMLDivElement, {
   return (
     <div
       ref={ref}
-      data-density="soft"
-      style={{
-        backgroundColor: styles.pageBgHex,
-        width: '100%',
-        height: '100%',
-        overflow: 'hidden',
-      }}
+      className={`${styles.pageBg} h-full w-full`}
+      style={{ backgroundColor: styles.pageBgHex }}
     >
       <div
-        className={`${styles.text}`}
-        style={{
-          ...contentStyle,
-          width: '100%',
-          height: '100%',
-          padding: '2rem',
-          overflow: 'auto',
-          boxSizing: 'border-box',
-        }}
+        className={`h-full w-full px-8 py-6 overflow-auto ${styles.text}`}
+        style={contentStyle}
       >
         {page.content ? (
-          <div style={{ whiteSpace: 'pre-wrap' }}>{page.content}</div>
+          <div className="whitespace-pre-wrap">{page.content}</div>
         ) : (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '100%',
-            opacity: 0.5
-          }}>
+          <div className="flex items-center justify-center h-full opacity-50">
             Page {page.pageNumber}
           </div>
         )}
