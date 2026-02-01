@@ -191,8 +191,8 @@ export function SimpleReader({
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 flex items-center justify-center px-4 md:px-8 py-4 overflow-hidden">
-        <div className={`flex gap-4 h-full ${isWideScreen ? 'max-w-[95vw]' : 'max-w-[90vw]'} w-full`}>
+      <div className="flex-1 flex items-stretch px-4 md:px-8 py-4 overflow-hidden">
+        <div className="flex gap-4 h-full w-full">
           {currentPages.map((page) => (
             <div
               key={page.pageNumber}
