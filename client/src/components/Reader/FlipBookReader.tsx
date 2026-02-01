@@ -233,14 +233,7 @@ export function FlipBookReader({
         className="flex-1 flex items-center justify-center p-4 overflow-hidden"
       >
         {pages.length > 0 && bookSize.width > 0 && (
-          <div
-            className="p-3 rounded-lg"
-            style={{
-              background: '#2c2c2c',
-              boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
-            }}
-          >
-            <HTMLFlipBook
+          <HTMLFlipBook
               ref={bookRef}
               width={bookSize.width}
               height={bookSize.height}
@@ -277,7 +270,6 @@ export function FlipBookReader({
               />
             ))}
           </HTMLFlipBook>
-          </div>
         )}
       </div>
 
