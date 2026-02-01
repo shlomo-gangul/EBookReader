@@ -41,7 +41,9 @@ export function useBookReader(): UseBookReaderReturn {
   }, []);
 
   const splitTextIntoPages = useCallback((text: string, charsPerPage = 2000): PageContent[] => {
-    const paragraphs = text.split(/\n\n+/);
+    // Normalize line endings and split by double newlines
+    const normalizedText = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    const paragraphs = normalizedText.split(/\n\n+/);
     const pageContents: PageContent[] = [];
     let currentContent = '';
     let pageNumber = 1;

@@ -16,7 +16,16 @@ interface BookReaderProps {
 export function BookReader({ pages, isLoading, error, onClose }: BookReaderProps) {
   const pageFlipRef = useRef<PageFlipHandle>(null);
 
-  const { currentPage, totalPages, settings, setCurrentPage, updateSettings } = useBookStore();
+  const { currentPage, settings, setCurrentPage, updateSettings, setTotalPages } = useBookStore();
+
+  // Sync totalPages with actual pages array
+  useEffect(() => {
+    if (pages.length > 0) {
+      setTotalPages(pages.length);
+    }
+  }, [pages.length, setTotalPages]);
+
+  const totalPages = pages.length;
 
   const {
     bookmarks,

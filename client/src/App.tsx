@@ -1,12 +1,14 @@
 import { useState, useCallback } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { BookOpen, Upload, Library, Menu, X } from 'lucide-react';
-import { SearchBar, BookGrid } from './components/Library';
+import { BookOpen, Upload, Library, Menu, X, TrendingUp } from 'lucide-react';
+import { SearchBar, BookGrid, BookCard } from './components/Library';
 import { BookReader } from './components/Reader';
 import { PdfUploader } from './components/Upload';
 import { useLibrary } from './hooks/useLibrary';
 import { useBookReader } from './hooks/useBookReader';
+import { usePopularBooks } from './hooks/usePopularBooks';
 import { useBookStore } from './store';
+import { Spinner } from './components/common';
 import type { Book } from './types';
 
 function HomePage() {
@@ -14,6 +16,7 @@ function HomePage() {
   const { recentBooks } = useBookStore();
   const { books, isLoading, hasMore, search, loadMore, clearSearch } = useLibrary();
   const { loadBook, loadPdfFile, pages, isLoading: bookLoading, error } = useBookReader();
+  const { genreBooks, isLoading: genresLoading } = usePopularBooks();
   const [showReader, setShowReader] = useState(false);
   const [showUploader, setShowUploader] = useState(false);
 
@@ -129,24 +132,29 @@ function HomePage() {
           </section>
         )}
 
-        {/* Empty State */}
-        {books.length === 0 && recentBooks.length === 0 && !isLoading && (
-          <section className="text-center py-12">
-            <BookOpen className="w-16 h-16 mx-auto text-slate-600 mb-4" />
-            <h3 className="text-xl font-semibold text-slate-300 mb-2">
-              Start Your Reading Journey
-            </h3>
-            <p className="text-slate-500 mb-6">
-              Search for a book above or upload a PDF to begin
-            </p>
-            <button
-              onClick={() => setShowUploader(true)}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-            >
-              <Upload className="w-5 h-5" />
-              Upload a PDF
-            </button>
-          </section>
+        {/* Popular Books by Genre */}
+        {books.length === 0 && !isLoading && (
+          <>
+            {genresLoading ? (
+              <div className="flex justify-center py-12">
+                <Spinner size="lg" />
+              </div>
+            ) : (
+              genreBooks.map((genre) => (
+                <section key={genre.genre} className="mb-12">
+                  <h3 className="text-xl font-semibold text-slate-100 mb-6 flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-blue-400" />
+                    Popular in {genre.genre}
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    {genre.books.map((book) => (
+                      <BookCard key={book.id} book={book} onClick={handleBookClick} />
+                    ))}
+                  </div>
+                </section>
+              ))
+            )}
+          </>
         )}
       </main>
 
