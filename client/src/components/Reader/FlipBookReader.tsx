@@ -234,38 +234,72 @@ export function FlipBookReader({
       >
         {pages.length > 0 && bookSize.width > 0 && (
           <div className="relative">
-            {/* Left cover - behind pages */}
+            {/* Book cover base - dark hardcover */}
             <div
               className="absolute z-0"
               style={{
-                top: -6,
-                left: -15,
-                bottom: -6,
-                width: '51%',
-                background: 'linear-gradient(90deg, #654321 0%, #8B4513 20%, #7a3d12 100%)',
+                top: -12,
+                left: -12,
+                right: -12,
+                bottom: -12,
+                background: '#2c2c2c',
+                borderRadius: '6px',
+                boxShadow: '0 15px 35px rgba(0,0,0,0.5)',
+              }}
+            />
+            {/* Left cover inner edge */}
+            <div
+              className="absolute z-0"
+              style={{
+                top: -8,
+                left: -8,
+                bottom: -8,
+                width: 12,
+                background: 'linear-gradient(90deg, #1a1a1a 0%, #333 100%)',
                 borderRadius: '4px 0 0 4px',
-                boxShadow: '-5px 8px 20px rgba(0,0,0,0.4)',
               }}
             />
-            {/* Right cover - behind pages */}
+            {/* Right cover inner edge */}
             <div
               className="absolute z-0"
               style={{
-                top: -6,
-                right: -15,
-                bottom: -6,
-                width: '51%',
-                background: 'linear-gradient(90deg, #7a3d12 0%, #8B4513 80%, #654321 100%)',
+                top: -8,
+                right: -8,
+                bottom: -8,
+                width: 12,
+                background: 'linear-gradient(90deg, #333 0%, #1a1a1a 100%)',
                 borderRadius: '0 4px 4px 0',
-                boxShadow: '5px 8px 20px rgba(0,0,0,0.4)',
               }}
             />
-            {/* Spine/binding in center - on top */}
+            {/* Center binding/crease */}
             <div
-              className="absolute top-0 bottom-0 w-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none"
+              className="absolute top-0 bottom-0 w-4 left-1/2 -translate-x-1/2 z-30 pointer-events-none"
               style={{
-                background: 'linear-gradient(90deg, #3d2314 0%, #5c3a1d 30%, #4a2c17 50%, #5c3a1d 70%, #3d2314 100%)',
-                boxShadow: 'inset 0 0 10px rgba(0,0,0,0.5)',
+                background: 'linear-gradient(90deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.4) 45%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.4) 55%, rgba(0,0,0,0.15) 100%)',
+              }}
+            />
+            {/* Page stack effect - left */}
+            <div
+              className="absolute z-0 pointer-events-none"
+              style={{
+                top: 2,
+                left: 2,
+                bottom: -4,
+                width: '50%',
+                background: 'linear-gradient(180deg, #e8e8e8 0%, #d0d0d0 100%)',
+                borderRadius: '2px 0 0 2px',
+              }}
+            />
+            {/* Page stack effect - right */}
+            <div
+              className="absolute z-0 pointer-events-none"
+              style={{
+                top: 2,
+                right: 2,
+                bottom: -4,
+                width: '50%',
+                background: 'linear-gradient(180deg, #e8e8e8 0%, #d0d0d0 100%)',
+                borderRadius: '0 2px 2px 0',
               }}
             />
             <HTMLFlipBook
