@@ -25,22 +25,22 @@ const fontFamilies: Record<FontFamily, { name: string; css: string }> = {
 
 const modeStyles: Record<ReadingMode, { bg: string; text: string; pageBg: string; pageBgHex: string }> = {
   day: {
-    bg: 'bg-gray-100',
+    bg: 'bg-gray-200',
     text: 'text-gray-900',
     pageBg: 'bg-white',
-    pageBgHex: '#ffffff',
+    pageBgHex: '#fffef9', // Slightly warm white like real paper
   },
   night: {
-    bg: 'bg-slate-900',
+    bg: 'bg-slate-950',
     text: 'text-slate-200',
     pageBg: 'bg-slate-800',
     pageBgHex: '#1e293b',
   },
   sepia: {
-    bg: 'bg-amber-50',
+    bg: 'bg-amber-100',
     text: 'text-amber-900',
-    pageBg: 'bg-amber-100',
-    pageBgHex: '#fef3c7',
+    pageBg: 'bg-amber-50',
+    pageBgHex: '#fefce8', // Warm cream paper
   },
 };
 
