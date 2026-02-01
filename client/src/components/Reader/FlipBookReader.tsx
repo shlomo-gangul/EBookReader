@@ -234,9 +234,9 @@ export function FlipBookReader({
       >
         {pages.length > 0 && bookSize.width > 0 && (
           <div className="relative">
-            {/* Left cover */}
+            {/* Left cover - behind pages */}
             <div
-              className="absolute"
+              className="absolute z-0"
               style={{
                 top: -6,
                 left: -15,
@@ -247,9 +247,9 @@ export function FlipBookReader({
                 boxShadow: '-5px 8px 20px rgba(0,0,0,0.4)',
               }}
             />
-            {/* Right cover */}
+            {/* Right cover - behind pages */}
             <div
-              className="absolute"
+              className="absolute z-0"
               style={{
                 top: -6,
                 right: -15,
@@ -260,9 +260,9 @@ export function FlipBookReader({
                 boxShadow: '5px 8px 20px rgba(0,0,0,0.4)',
               }}
             />
-            {/* Spine/binding in center */}
+            {/* Spine/binding in center - on top */}
             <div
-              className="absolute top-0 bottom-0 w-6 left-1/2 -translate-x-1/2 z-10 pointer-events-none"
+              className="absolute top-0 bottom-0 w-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none"
               style={{
                 background: 'linear-gradient(90deg, #3d2314 0%, #5c3a1d 30%, #4a2c17 50%, #5c3a1d 70%, #3d2314 100%)',
                 boxShadow: 'inset 0 0 10px rgba(0,0,0,0.5)',
@@ -290,7 +290,7 @@ export function FlipBookReader({
               showPageCorners={true}
               disableFlipByClick={false}
               onFlip={onFlip}
-              className="shadow-2xl relative z-20"
+              className="shadow-2xl relative z-10"
               style={{}}
               startZIndex={0}
               autoSize={true}
