@@ -62,66 +62,24 @@ const Page = forwardRef<HTMLDivElement, {
   page: PageContent;
   styles: typeof modeStyles.day;
   contentStyle: React.CSSProperties;
-  pageNumber: number;
-}>(({ page, styles, contentStyle, pageNumber }, ref) => {
-  const isLeftPage = pageNumber % 2 === 1; // Odd pages on left
-
+}>(({ page, styles, contentStyle }, ref) => {
   return (
     <div
       ref={ref}
-      className="h-full w-full relative"
-      style={{
-        backgroundColor: styles.pageBgHex,
-        // Paper texture gradient
-        backgroundImage: `
-          linear-gradient(${isLeftPage ? '90deg' : '270deg'},
-            rgba(0,0,0,0.03) 0%,
-            transparent 5%,
-            transparent 95%,
-            rgba(0,0,0,0.02) 100%
-          )
-        `,
-      }}
+      className="h-full w-full"
+      style={{ backgroundColor: styles.pageBgHex }}
     >
-      {/* Inner page shadow on binding side */}
       <div
-        className="absolute top-0 bottom-0 w-8 pointer-events-none"
-        style={{
-          [isLeftPage ? 'right' : 'left']: 0,
-          background: `linear-gradient(${isLeftPage ? '270deg' : '90deg'},
-            transparent 0%,
-            rgba(0,0,0,0.06) 100%
-          )`,
-        }}
-      />
-
-      {/* Page content */}
-      <div
-        className={`h-full w-full overflow-auto ${styles.text}`}
-        style={{
-          ...contentStyle,
-          padding: '2rem 2.5rem',
-          paddingLeft: isLeftPage ? '2.5rem' : '3rem',
-          paddingRight: isLeftPage ? '3rem' : '2.5rem',
-        }}
+        className={`h-full w-full px-10 py-8 overflow-auto ${styles.text}`}
+        style={contentStyle}
       >
         {page.content ? (
-          <div className="whitespace-pre-wrap leading-relaxed">{page.content}</div>
+          <div className="whitespace-pre-wrap">{page.content}</div>
         ) : (
           <div className="flex items-center justify-center h-full opacity-50">
             Page {page.pageNumber}
           </div>
         )}
-      </div>
-
-      {/* Page number at bottom */}
-      <div
-        className={`absolute bottom-3 text-xs opacity-40 ${styles.text}`}
-        style={{
-          [isLeftPage ? 'left' : 'right']: '2rem',
-        }}
-      >
-        {page.pageNumber}
       </div>
     </div>
   );
@@ -307,7 +265,6 @@ export function FlipBookReader({
               <Page
                 key={page.pageNumber}
                 page={page}
-                pageNumber={page.pageNumber}
                 styles={styles}
                 contentStyle={contentStyle}
               />
