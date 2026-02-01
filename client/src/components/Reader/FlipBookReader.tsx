@@ -230,8 +230,34 @@ export function FlipBookReader({
       {/* Book Container */}
       <div
         ref={containerRef}
-        className="flex-1 flex items-center justify-center p-4 overflow-hidden"
+        className="flex-1 flex items-center justify-center p-4 overflow-hidden relative"
       >
+        {/* Book cover behind pages */}
+        {pages.length > 0 && bookSize.width > 0 && (
+          <div
+            className="absolute pointer-events-none"
+            style={{
+              width: bookSize.width * 2 + 24,
+              height: bookSize.height + 24,
+              background: '#1a1a1a',
+              borderRadius: '8px',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.6)',
+            }}
+          />
+        )}
+        {/* Page edges / stack effect */}
+        {pages.length > 0 && bookSize.width > 0 && (
+          <div
+            className="absolute pointer-events-none"
+            style={{
+              width: bookSize.width * 2 + 8,
+              height: bookSize.height + 8,
+              background: 'linear-gradient(to bottom, #f5f5f0, #e0e0d8)',
+              borderRadius: '2px',
+              boxShadow: 'inset 0 0 10px rgba(0,0,0,0.1)',
+            }}
+          />
+        )}
         {pages.length > 0 && bookSize.width > 0 && (
           <HTMLFlipBook
               ref={bookRef}
