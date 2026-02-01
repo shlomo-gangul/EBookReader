@@ -92,7 +92,8 @@ export function SimpleReader({
   const [localFontSize, setLocalFontSize] = useState(settings.fontSize);
   const [isFlipping, setIsFlipping] = useState(false);
   const [flipDirection, setFlipDirection] = useState<'next' | 'prev' | null>(null);
-  const [peekDirection, setPeekDirection] = useState<'next' | 'prev' | null>(null);
+  const [hoverNext, setHoverNext] = useState(false);
+  const [hoverPrev, setHoverPrev] = useState(false);
   const debouncedFontSize = useDebounce(localFontSize, 150);
 
   const styles = modeStyles[settings.mode];
@@ -143,7 +144,7 @@ export function SimpleReader({
 
     setFlipDirection('next');
     setIsFlipping(true);
-    setPeekDirection(null);
+    setHoverNext(false);
 
     setTimeout(() => {
       const increment = getPageIncrement();
@@ -151,7 +152,7 @@ export function SimpleReader({
       onPageChange(newPage);
       setIsFlipping(false);
       setFlipDirection(null);
-    }, 600);
+    }, 700);
   }, [currentPage, totalPages, isWideScreen, onPageChange, isFlipping]);
 
   const handlePrev = useCallback(() => {
@@ -159,7 +160,7 @@ export function SimpleReader({
 
     setFlipDirection('prev');
     setIsFlipping(true);
-    setPeekDirection(null);
+    setHoverPrev(false);
 
     setTimeout(() => {
       const decrement = getPageIncrement();
@@ -167,7 +168,7 @@ export function SimpleReader({
       onPageChange(newPage);
       setIsFlipping(false);
       setFlipDirection(null);
-    }, 600);
+    }, 700);
   }, [currentPage, isWideScreen, onPageChange, isFlipping]);
 
   // Get page content by index
@@ -271,12 +272,14 @@ export function SimpleReader({
                 <div className={`flex items-center justify-between px-4 py-2 border-t border-current/10 ${styles.text}`}>
                   <button
                     onClick={handlePrev}
-                    onMouseEnter={() => !isFlipping && currentPage > 1 && setPeekDirection('prev')}
-                    onMouseLeave={() => setPeekDirection(null)}
+                    onMouseEnter={() => !isFlipping && currentPage > 1 && setHoverPrev(true)}
+                    onMouseLeave={() => setHoverPrev(false)}
                     disabled={currentPage <= 1 || isFlipping}
-                    className="nav-button flex items-center gap-1 text-sm opacity-60 hover:opacity-100 disabled:opacity-20 transition-all"
+                    className={`nav-button flex items-center gap-1 text-sm transition-all ${
+                      hoverPrev ? 'opacity-100 scale-110' : 'opacity-60 hover:opacity-100'
+                    } disabled:opacity-20`}
                   >
-                    <ChevronLeft className="w-4 h-4" />
+                    <ChevronLeft className={`w-4 h-4 transition-transform ${hoverPrev ? '-translate-x-1' : ''}`} />
                     <span>Prev</span>
                   </button>
                   <span className="text-xs opacity-50">{leftPage?.pageNumber}</span>
@@ -298,71 +301,21 @@ export function SimpleReader({
                   <span className="text-xs opacity-50">{rightPage?.pageNumber}</span>
                   <button
                     onClick={handleNext}
-                    onMouseEnter={() => !isFlipping && currentPage < totalPages && setPeekDirection('next')}
-                    onMouseLeave={() => setPeekDirection(null)}
+                    onMouseEnter={() => !isFlipping && currentPage < totalPages && setHoverNext(true)}
+                    onMouseLeave={() => setHoverNext(false)}
                     disabled={currentPage >= totalPages || isFlipping}
-                    className="nav-button flex items-center gap-1 text-sm opacity-60 hover:opacity-100 disabled:opacity-20 transition-all"
+                    className={`nav-button flex items-center gap-1 text-sm transition-all ${
+                      hoverNext ? 'opacity-100 scale-110' : 'opacity-60 hover:opacity-100'
+                    } disabled:opacity-20`}
                   >
                     <span>Next</span>
-                    <ChevronRight className="w-4 h-4" />
+                    <ChevronRight className={`w-4 h-4 transition-transform ${hoverNext ? 'translate-x-1' : ''}`} />
                   </button>
                 </div>
               </div>
 
               {/* Spine shadow */}
               <div className="spine-shadow" />
-
-              {/* Flipping page overlay for NEXT */}
-              {(flipDirection === 'next' || peekDirection === 'next') && (
-                <div className="flipping-page-container">
-                  <div
-                    className={`flipping-page from-right ${flipDirection === 'next' ? 'flipping' : ''}`}
-                    style={{
-                      transform: peekDirection === 'next' && !flipDirection ? 'rotateY(-15deg)' : undefined,
-                    }}
-                  >
-                    {/* Front - current right page */}
-                    <div className="flip-page-front" style={{ backgroundColor: styles.pageBgHex }}>
-                      <div className={`h-full px-8 md:px-12 lg:px-16 py-6 overflow-hidden ${styles.text}`} style={contentStyle}>
-                        {renderPageContent(rightPage)}
-                      </div>
-                    </div>
-                    {/* Back - next left page (mirrored) */}
-                    <div className="flip-page-back" style={{ backgroundColor: styles.pageBgHex }}>
-                      <div className={`h-full px-8 md:px-12 lg:px-16 py-6 overflow-hidden ${styles.text}`} style={contentStyle}>
-                        {renderPageContent(nextLeftPage)}
-                      </div>
-                    </div>
-                    <div className="flip-shadow" />
-                  </div>
-                </div>
-              )}
-
-              {/* Flipping page overlay for PREV */}
-              {(flipDirection === 'prev' || peekDirection === 'prev') && (
-                <div className="flipping-page-container">
-                  <div
-                    className={`flipping-page from-left ${flipDirection === 'prev' ? 'flipping' : ''}`}
-                    style={{
-                      transform: peekDirection === 'prev' && !flipDirection ? 'rotateY(15deg)' : undefined,
-                    }}
-                  >
-                    {/* Front - current left page */}
-                    <div className="flip-page-front" style={{ backgroundColor: styles.pageBgHex }}>
-                      <div className={`h-full px-8 md:px-12 lg:px-16 py-6 overflow-hidden ${styles.text}`} style={contentStyle}>
-                        {renderPageContent(leftPage)}
-                      </div>
-                    </div>
-                    {/* Back - prev right page (mirrored) */}
-                    <div className="flip-page-back" style={{ backgroundColor: styles.pageBgHex }}>
-                      <div className={`h-full px-8 md:px-12 lg:px-16 py-6 overflow-hidden ${styles.text}`} style={contentStyle}>
-                        {renderPageContent(prevRightPage)}
-                      </div>
-                    </div>
-                    <div className="flip-shadow" />
-                  </div>
-                </div>
-              )}
             </>
           ) : (
             /* Single page mode */
@@ -379,77 +332,32 @@ export function SimpleReader({
                 <div className={`flex items-center justify-between px-4 py-2 border-t border-current/10 ${styles.text}`}>
                   <button
                     onClick={handlePrev}
-                    onMouseEnter={() => !isFlipping && currentPage > 1 && setPeekDirection('prev')}
-                    onMouseLeave={() => setPeekDirection(null)}
+                    onMouseEnter={() => !isFlipping && currentPage > 1 && setHoverPrev(true)}
+                    onMouseLeave={() => setHoverPrev(false)}
                     disabled={currentPage <= 1 || isFlipping}
-                    className="nav-button flex items-center gap-1 text-sm opacity-60 hover:opacity-100 disabled:opacity-20 transition-all"
+                    className={`nav-button flex items-center gap-1 text-sm transition-all ${
+                      hoverPrev ? 'opacity-100 scale-110' : 'opacity-60 hover:opacity-100'
+                    } disabled:opacity-20`}
                   >
-                    <ChevronLeft className="w-4 h-4" />
+                    <ChevronLeft className={`w-4 h-4 transition-transform ${hoverPrev ? '-translate-x-1' : ''}`} />
                     <span>Prev</span>
                   </button>
                   <span className="text-xs opacity-50">{leftPage?.pageNumber}</span>
                   <button
                     onClick={handleNext}
-                    onMouseEnter={() => !isFlipping && currentPage < totalPages && setPeekDirection('next')}
-                    onMouseLeave={() => setPeekDirection(null)}
+                    onMouseEnter={() => !isFlipping && currentPage < totalPages && setHoverNext(true)}
+                    onMouseLeave={() => setHoverNext(false)}
                     disabled={currentPage >= totalPages || isFlipping}
-                    className="nav-button flex items-center gap-1 text-sm opacity-60 hover:opacity-100 disabled:opacity-20 transition-all"
+                    className={`nav-button flex items-center gap-1 text-sm transition-all ${
+                      hoverNext ? 'opacity-100 scale-110' : 'opacity-60 hover:opacity-100'
+                    } disabled:opacity-20`}
                   >
                     <span>Next</span>
-                    <ChevronRight className="w-4 h-4" />
+                    <ChevronRight className={`w-4 h-4 transition-transform ${hoverNext ? 'translate-x-1' : ''}`} />
                   </button>
                 </div>
               </div>
 
-              {/* Flipping page overlay for single page - NEXT */}
-              {(flipDirection === 'next' || peekDirection === 'next') && (
-                <div className="flipping-page-container">
-                  <div
-                    className={`flipping-page from-right ${flipDirection === 'next' ? 'flipping' : ''}`}
-                    style={{
-                      width: '100%',
-                      transform: peekDirection === 'next' && !flipDirection ? 'rotateY(-15deg)' : undefined,
-                    }}
-                  >
-                    <div className="flip-page-front rounded-lg" style={{ backgroundColor: styles.pageBgHex }}>
-                      <div className={`h-full px-6 md:px-10 py-6 overflow-hidden ${styles.text}`} style={contentStyle}>
-                        {renderPageContent(leftPage)}
-                      </div>
-                    </div>
-                    <div className="flip-page-back rounded-lg" style={{ backgroundColor: styles.pageBgHex }}>
-                      <div className={`h-full px-6 md:px-10 py-6 overflow-hidden ${styles.text}`} style={contentStyle}>
-                        {renderPageContent(nextLeftPage)}
-                      </div>
-                    </div>
-                    <div className="flip-shadow" />
-                  </div>
-                </div>
-              )}
-
-              {/* Flipping page overlay for single page - PREV */}
-              {(flipDirection === 'prev' || peekDirection === 'prev') && (
-                <div className="flipping-page-container">
-                  <div
-                    className={`flipping-page from-left ${flipDirection === 'prev' ? 'flipping' : ''}`}
-                    style={{
-                      width: '100%',
-                      transform: peekDirection === 'prev' && !flipDirection ? 'rotateY(15deg)' : undefined,
-                    }}
-                  >
-                    <div className="flip-page-front rounded-lg" style={{ backgroundColor: styles.pageBgHex }}>
-                      <div className={`h-full px-6 md:px-10 py-6 overflow-hidden ${styles.text}`} style={contentStyle}>
-                        {renderPageContent(leftPage)}
-                      </div>
-                    </div>
-                    <div className="flip-page-back rounded-lg" style={{ backgroundColor: styles.pageBgHex }}>
-                      <div className={`h-full px-6 md:px-10 py-6 overflow-hidden ${styles.text}`} style={contentStyle}>
-                        {renderPageContent(prevLeftPage)}
-                      </div>
-                    </div>
-                    <div className="flip-shadow" />
-                  </div>
-                </div>
-              )}
             </>
           )}
         </div>
@@ -497,6 +405,43 @@ export function SimpleReader({
           </span>
         </div>
       </div>
+
+      {/* Page Flip Overlay - Fixed position above everything */}
+      {flipDirection === 'next' && (
+        <div className={`flipping-page-container ${!isWideScreen ? 'single-page-mode' : ''}`}>
+          <div className="flipping-page from-right flipping">
+            <div className="flip-page-front" style={{ backgroundColor: styles.pageBgHex }}>
+              <div className={`h-full px-8 md:px-12 lg:px-16 py-6 overflow-hidden ${styles.text}`} style={contentStyle}>
+                {renderPageContent(isWideScreen ? rightPage : leftPage)}
+              </div>
+            </div>
+            <div className="flip-page-back" style={{ backgroundColor: styles.pageBgHex }}>
+              <div className={`h-full px-8 md:px-12 lg:px-16 py-6 overflow-hidden ${styles.text}`} style={contentStyle}>
+                {renderPageContent(nextLeftPage)}
+              </div>
+            </div>
+            <div className="flip-shadow" />
+          </div>
+        </div>
+      )}
+
+      {flipDirection === 'prev' && (
+        <div className={`flipping-page-container ${!isWideScreen ? 'single-page-mode' : ''}`}>
+          <div className="flipping-page from-left flipping">
+            <div className="flip-page-front" style={{ backgroundColor: styles.pageBgHex }}>
+              <div className={`h-full px-8 md:px-12 lg:px-16 py-6 overflow-hidden ${styles.text}`} style={contentStyle}>
+                {renderPageContent(leftPage)}
+              </div>
+            </div>
+            <div className="flip-page-back" style={{ backgroundColor: styles.pageBgHex }}>
+              <div className={`h-full px-8 md:px-12 lg:px-16 py-6 overflow-hidden ${styles.text}`} style={contentStyle}>
+                {renderPageContent(isWideScreen ? prevRightPage : prevLeftPage)}
+              </div>
+            </div>
+            <div className="flip-shadow" />
+          </div>
+        </div>
+      )}
 
       {/* Settings Modal */}
       <Modal isOpen={showSettings} onClose={() => setShowSettings(false)} title="Reader Settings">
