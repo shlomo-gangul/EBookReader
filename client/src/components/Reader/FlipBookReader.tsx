@@ -242,7 +242,7 @@ export function FlipBookReader({
             ref={bookRef}
             width={bookSize.width}
             height={bookSize.height}
-            size="stretch"
+            size="fixed"
             minWidth={200}
             maxWidth={1500}
             minHeight={300}
