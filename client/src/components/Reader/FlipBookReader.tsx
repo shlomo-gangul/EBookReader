@@ -27,20 +27,20 @@ const modeStyles: Record<ReadingMode, { bg: string; text: string; pageBg: string
   day: {
     bg: 'bg-gray-200',
     text: 'text-gray-900',
-    pageBg: 'bg-white',
-    pageBgHex: '#fefce8', // Warm cream like real paper
+    pageBg: 'bg-[#fefce8]',
+    pageBgHex: '#fefce8',
   },
   night: {
     bg: 'bg-slate-950',
     text: 'text-slate-200',
-    pageBg: 'bg-slate-800',
+    pageBg: 'bg-[#1e293b]',
     pageBgHex: '#1e293b',
   },
   sepia: {
     bg: 'bg-amber-100',
     text: 'text-amber-900',
-    pageBg: 'bg-amber-50',
-    pageBgHex: '#fefce8', // Warm cream paper
+    pageBg: 'bg-[#fef3c7]',
+    pageBgHex: '#fef3c7',
   },
 };
 
@@ -66,7 +66,7 @@ const Page = forwardRef<HTMLDivElement, {
   return (
     <div
       ref={ref}
-      className="h-full w-full"
+      className={`${styles.pageBg} h-full w-full`}
       style={{ backgroundColor: styles.pageBgHex }}
     >
       <div
