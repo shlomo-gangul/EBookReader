@@ -233,34 +233,55 @@ export function FlipBookReader({
         className="flex-1 flex items-center justify-center p-4 overflow-hidden"
       >
         {pages.length > 0 && bookSize.width > 0 && (
-          <HTMLFlipBook
-            ref={bookRef}
-            width={bookSize.width}
-            height={bookSize.height}
-            size="fixed"
-            minWidth={200}
-            maxWidth={1500}
-            minHeight={300}
-            maxHeight={2000}
-            drawShadow={true}
-            flippingTime={500}
-            usePortrait={true}
-            startPage={currentPage - 1}
-            showCover={false}
-            maxShadowOpacity={0.5}
-            mobileScrollSupport={false}
-            clickEventForward={true}
-            useMouseEvents={true}
-            swipeDistance={30}
-            showPageCorners={true}
-            disableFlipByClick={false}
-            onFlip={onFlip}
-            className="shadow-2xl"
-            style={{}}
-            startZIndex={0}
-            autoSize={true}
-            renderOnlyPageLengthChange={false}
-          >
+          <div className="relative">
+            {/* Book cover behind pages */}
+            <div
+              className="absolute rounded-sm"
+              style={{
+                top: -8,
+                left: -12,
+                right: -12,
+                bottom: -8,
+                background: 'linear-gradient(90deg, #8B4513 0%, #A0522D 10%, #8B4513 50%, #A0522D 90%, #8B4513 100%)',
+                boxShadow: '0 10px 40px rgba(0,0,0,0.4), inset 0 0 20px rgba(0,0,0,0.3)',
+                borderRadius: '4px 8px 8px 4px',
+              }}
+            />
+            {/* Spine */}
+            <div
+              className="absolute top-0 bottom-0 w-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none"
+              style={{
+                background: 'linear-gradient(90deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.2) 100%)',
+              }}
+            />
+            <HTMLFlipBook
+              ref={bookRef}
+              width={bookSize.width}
+              height={bookSize.height}
+              size="fixed"
+              minWidth={200}
+              maxWidth={1500}
+              minHeight={300}
+              maxHeight={2000}
+              drawShadow={true}
+              flippingTime={500}
+              usePortrait={true}
+              startPage={currentPage - 1}
+              showCover={false}
+              maxShadowOpacity={0.5}
+              mobileScrollSupport={false}
+              clickEventForward={true}
+              useMouseEvents={true}
+              swipeDistance={30}
+              showPageCorners={true}
+              disableFlipByClick={false}
+              onFlip={onFlip}
+              className="shadow-2xl relative z-20"
+              style={{}}
+              startZIndex={0}
+              autoSize={true}
+              renderOnlyPageLengthChange={false}
+            >
             {pages.map((page) => (
               <Page
                 key={page.pageNumber}
@@ -270,6 +291,7 @@ export function FlipBookReader({
               />
             ))}
           </HTMLFlipBook>
+          </div>
         )}
       </div>
 
