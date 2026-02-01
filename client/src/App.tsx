@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { BookOpen, Upload, Library, Menu, X, TrendingUp } from 'lucide-react';
 import { SearchBar, BookGrid, BookCard } from './components/Library';
-import { SimpleReader } from './components/Reader';
+import { FlipBookReader } from './components/Reader';
 import { BookDetails } from './components/BookDetails';
 import { PdfUploader } from './components/Upload';
 import { useLibrary } from './hooks/useLibrary';
@@ -57,7 +57,7 @@ function HomePage() {
   // Show Reader
   if (viewState === 'reader' && pages.length > 0) {
     return (
-      <SimpleReader
+      <FlipBookReader
         pages={pages}
         currentPage={currentPage}
         totalPages={pages.length}
