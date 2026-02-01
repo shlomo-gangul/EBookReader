@@ -2,39 +2,118 @@ import { useState, useCallback } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { BookOpen, Upload, Library, Menu, X, TrendingUp } from 'lucide-react';
 import { SearchBar, BookGrid, BookCard } from './components/Library';
-import { BookReader } from './components/Reader';
+import { SimpleReader } from './components/Reader';
+import { BookDetails } from './components/BookDetails';
 import { PdfUploader } from './components/Upload';
 import { useLibrary } from './hooks/useLibrary';
 import { useBookReader } from './hooks/useBookReader';
 import { usePopularBooks } from './hooks/usePopularBooks';
+import { useReadingProgress } from './hooks/useReadingProgress';
 import { useBookStore } from './store';
 import { Spinner } from './components/common';
 import type { Book } from './types';
 
+type ViewState = 'library' | 'details' | 'reader';
+
 function HomePage() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const { recentBooks } = useBookStore();
+  const [showUploader, setShowUploader] = useState(false);
+  const [viewState, setViewState] = useState<ViewState>('library');
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+
+  const { recentBooks, settings, updateSettings, currentPage, setCurrentPage } = useBookStore();
   const { books, isLoading, hasMore, search, loadMore, clearSearch } = useLibrary();
   const { loadBook, loadPdfFile, pages, isLoading: bookLoading, error } = useBookReader();
   const { genreBooks, isLoading: genresLoading } = usePopularBooks();
-  const [showReader, setShowReader] = useState(false);
-  const [showUploader, setShowUploader] = useState(false);
+  const { bookmarks, addBookmark, removeBookmark } = useReadingProgress();
 
-  const handleBookClick = useCallback(async (book: Book) => {
-    await loadBook(book);
-    setShowReader(true);
-  }, [loadBook]);
+  const handleBookClick = useCallback((book: Book) => {
+    setSelectedBook(book);
+    setViewState('details');
+  }, []);
+
+  const handleStartReading = useCallback(async () => {
+    if (selectedBook) {
+      await loadBook(selectedBook);
+      setViewState('reader');
+    }
+  }, [selectedBook, loadBook]);
 
   const handlePdfUpload = useCallback(async (file: File) => {
     await loadPdfFile(file);
     setShowUploader(false);
-    setShowReader(true);
+    setViewState('reader');
   }, [loadPdfFile]);
 
-  const handleCloseReader = useCallback(() => {
-    setShowReader(false);
+  const handleBackToLibrary = useCallback(() => {
+    setViewState('library');
+    setSelectedBook(null);
   }, []);
 
+  const handleBackToDetails = useCallback(() => {
+    setViewState('details');
+  }, []);
+
+  // Show Reader
+  if (viewState === 'reader' && pages.length > 0) {
+    return (
+      <SimpleReader
+        pages={pages}
+        currentPage={currentPage}
+        totalPages={pages.length}
+        settings={settings}
+        bookmarks={bookmarks}
+        onPageChange={setCurrentPage}
+        onSettingsChange={updateSettings}
+        onAddBookmark={() => addBookmark()}
+        onRemoveBookmark={removeBookmark}
+        onClose={handleBackToDetails}
+      />
+    );
+  }
+
+  // Show Book Details
+  if (viewState === 'details' && selectedBook) {
+    return (
+      <BookDetails
+        book={selectedBook}
+        onBack={handleBackToLibrary}
+        onStartReading={handleStartReading}
+        onBookClick={handleBookClick}
+      />
+    );
+  }
+
+  // Show Loading while book is loading
+  if (bookLoading) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <Spinner size="lg" />
+          <p className="mt-4 text-slate-400">Loading book...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show Error
+  if (error) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-center max-w-md px-4">
+          <p className="text-red-400 mb-4">{error}</p>
+          <button
+            onClick={handleBackToLibrary}
+            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors text-white"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show Library (default view)
   return (
     <div className="min-h-screen bg-slate-900">
       {/* Header */}
@@ -174,16 +253,6 @@ function HomePage() {
             <PdfUploader onUpload={handlePdfUpload} isLoading={bookLoading} />
           </div>
         </div>
-      )}
-
-      {/* Book Reader */}
-      {showReader && (
-        <BookReader
-          pages={pages}
-          isLoading={bookLoading}
-          error={error}
-          onClose={handleCloseReader}
-        />
       )}
 
       {/* Footer */}
