@@ -120,8 +120,8 @@ export function FlipBookReader({
         // Standard book page ratio is roughly 6:9 (width:height) or 2:3
         const bookRatio = 6 / 9; // width = height * 0.667
 
-        // Use 90% of container height
-        let pageHeight = containerHeight * 0.90;
+        // Use 99% of container height
+        let pageHeight = containerHeight * 0.99;
         let pageWidth = pageHeight * bookRatio;
 
         // Make sure two pages fit in the width
