@@ -199,7 +199,7 @@ export function SimpleReader({
               className={`flex-1 ${styles.pageBg} rounded-lg shadow-2xl overflow-hidden flex flex-col`}
             >
               <div
-                className={`flex-1 p-4 md:p-6 lg:p-8 overflow-hidden ${styles.text}`}
+                className={`flex-1 p-4 md:p-6 lg:p-8 overflow-auto ${styles.text}`}
                 style={{
                   fontSize: `${localFontSize}px`,
                   fontFamily: settings.fontFamily === 'serif'
@@ -209,7 +209,7 @@ export function SimpleReader({
                 }}
               >
                 {page.content ? (
-                  <div className="whitespace-pre-wrap overflow-hidden h-full">{page.content}</div>
+                  <div className="whitespace-pre-wrap">{page.content}</div>
                 ) : (
                   <div className="flex items-center justify-center h-full text-slate-400">
                     Page {page.pageNumber}
