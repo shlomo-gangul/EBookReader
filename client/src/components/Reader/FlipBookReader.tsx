@@ -117,9 +117,9 @@ export function FlipBookReader({
         const containerWidth = containerRef.current.clientWidth;
         const containerHeight = containerRef.current.clientHeight;
 
-        // Use 80% of container, leave some margin
-        const availableWidth = containerWidth * 0.80;
-        const availableHeight = containerHeight * 0.80;
+        // Use 90% of container, leave some margin
+        const availableWidth = containerWidth * 0.90;
+        const availableHeight = containerHeight * 0.90;
 
         // For two-page spread: each page is half the width
         // Page aspect ratio is roughly 2:3 (width:height)
