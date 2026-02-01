@@ -66,7 +66,7 @@ const Page = forwardRef<HTMLDivElement, {
   return (
     <div
       ref={ref}
-      className={`${styles.pageBg} h-full w-full`}
+      className="h-full w-full"
       style={{ backgroundColor: styles.pageBgHex }}
     >
       <div
