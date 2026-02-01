@@ -28,7 +28,7 @@ const modeStyles: Record<ReadingMode, { bg: string; text: string; pageBg: string
     bg: 'bg-gray-200',
     text: 'text-gray-900',
     pageBg: 'bg-white',
-    pageBgHex: '#fffef9', // Slightly warm white like real paper
+    pageBgHex: '#fefce8', // Warm cream like real paper
   },
   night: {
     bg: 'bg-slate-950',
