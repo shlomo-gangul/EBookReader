@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Modal } from '../common';
 import type { PageContent, ReadingMode, ReaderSettings, Bookmark as BookmarkType, FontFamily } from '../../types';
+import './PageFlipAnimation.css';
 
 // Font family mappings
 const fontFamilies: Record<FontFamily, { name: string; css: string }> = {
@@ -144,7 +145,7 @@ export function SimpleReader({
           onPageChange(totalPages);
         }
         setIsFlipping(false);
-      }, 300);
+      }, 600);
     }
   }, [currentPage, totalPages, isWideScreen, onPageChange, isFlipping]);
 
@@ -161,7 +162,7 @@ export function SimpleReader({
           onPageChange(1);
         }
         setIsFlipping(false);
-      }, 300);
+      }, 600);
     }
   }, [currentPage, isWideScreen, onPageChange, isFlipping]);
 
@@ -217,73 +218,120 @@ export function SimpleReader({
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 flex items-stretch px-4 md:px-8 py-4 overflow-hidden relative">
-        <div
-          className={`flex gap-4 h-full w-full transition-all duration-300 ease-in-out ${
-            isFlipping
-              ? flipDirection === 'right'
-                ? 'opacity-0 translate-x-4'
-                : 'opacity-0 -translate-x-4'
-              : 'opacity-100 translate-x-0'
-          }`}
-        >
-          {currentPages.map((page, idx) => (
-            <div
-              key={page.pageNumber}
-              className={`flex-1 ${styles.pageBg} rounded-lg shadow-2xl overflow-hidden flex flex-col relative`}
-            >
+      <div className="flex-1 flex items-stretch px-4 md:px-8 py-4 overflow-hidden relative book-container">
+        <div className="flex gap-0 h-full w-full relative">
+          {/* Spine shadow for two-page mode */}
+          {isWideScreen && currentPages.length === 2 && <div className="spine-shadow" />}
+
+          {currentPages.map((page, idx) => {
+            const isLeftPage = isWideScreen && idx === 0;
+            const isRightPage = isWideScreen && idx === 1;
+            const isSinglePage = !isWideScreen;
+
+            // Determine flip class
+            let flipClass = '';
+            if (isFlipping) {
+              if (isSinglePage) {
+                flipClass = flipDirection === 'right' ? 'flipping-next' : 'flipping-prev';
+              } else if (isRightPage && flipDirection === 'right') {
+                flipClass = 'flipping';
+              } else if (isLeftPage && flipDirection === 'left') {
+                flipClass = 'flipping';
+              }
+            }
+
+            const pageTypeClass = isSinglePage
+              ? 'page-single'
+              : isLeftPage
+                ? 'page-left'
+                : 'page-right';
+
+            return (
               <div
-                className={`flex-1 px-8 md:px-12 lg:px-16 py-6 overflow-auto ${styles.text}`}
-                style={{
-                  fontSize: `${localFontSize}px`,
-                  fontFamily: fontFamilies[settings.fontFamily].css,
-                  lineHeight: settings.lineHeight,
-                }}
+                key={page.pageNumber}
+                className={`page-card flex-1 ${styles.pageBg} ${
+                  isLeftPage ? 'rounded-l-lg' : isRightPage ? 'rounded-r-lg' : 'rounded-lg'
+                } shadow-2xl overflow-hidden flex flex-col relative ${pageTypeClass} ${flipClass}`}
               >
-                {page.content ? (
-                  <div className="whitespace-pre-wrap">{page.content}</div>
-                ) : (
-                  <div className="flex items-center justify-center h-full text-slate-400">
-                    Page {page.pageNumber}
-                  </div>
+                {/* Page edge shadows */}
+                {isLeftPage && <div className="page-shadow-right" />}
+                {isRightPage && <div className="page-shadow-left" />}
+                {isSinglePage && (
+                  <>
+                    <div className="page-shadow-left" />
+                    <div className="page-shadow-right" />
+                  </>
                 )}
-              </div>
 
-              {/* Page number and navigation at bottom */}
-              <div className={`flex items-center justify-between px-4 py-2 border-t border-current/10 ${styles.text}`}>
-                {/* Prev button - show on first page only */}
-                {idx === 0 ? (
-                  <button
+                {/* Clickable turn zones */}
+                {(isSinglePage || isLeftPage) && currentPage > 1 && (
+                  <div
+                    className="page-turn-zone page-turn-zone-left"
                     onClick={handlePrev}
-                    disabled={currentPage <= 1}
-                    className="flex items-center gap-1 text-sm opacity-60 hover:opacity-100 disabled:opacity-20 transition-opacity"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                    <span className="hidden sm:inline">Prev</span>
-                  </button>
-                ) : (
-                  <div />
+                    title="Previous page"
+                  />
                 )}
-
-                {/* Page number */}
-                <span className="text-xs opacity-50">{page.pageNumber}</span>
-
-                {/* Next button - show on last visible page only */}
-                {idx === currentPages.length - 1 ? (
-                  <button
+                {(isSinglePage || isRightPage) && currentPage < totalPages && (
+                  <div
+                    className="page-turn-zone page-turn-zone-right"
                     onClick={handleNext}
-                    disabled={currentPage >= totalPages}
-                    className="flex items-center gap-1 text-sm opacity-60 hover:opacity-100 disabled:opacity-20 transition-opacity"
-                  >
-                    <span className="hidden sm:inline">Next</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                ) : (
-                  <div />
+                    title="Next page"
+                  />
                 )}
+
+                <div
+                  className={`flex-1 px-8 md:px-12 lg:px-16 py-6 overflow-auto ${styles.text}`}
+                  style={{
+                    fontSize: `${localFontSize}px`,
+                    fontFamily: fontFamilies[settings.fontFamily].css,
+                    lineHeight: settings.lineHeight,
+                  }}
+                >
+                  {page.content ? (
+                    <div className="whitespace-pre-wrap">{page.content}</div>
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-slate-400">
+                      Page {page.pageNumber}
+                    </div>
+                  )}
+                </div>
+
+                {/* Page number and navigation at bottom */}
+                <div className={`flex items-center justify-between px-4 py-2 border-t border-current/10 ${styles.text}`}>
+                  {/* Prev button - show on first page only */}
+                  {idx === 0 ? (
+                    <button
+                      onClick={handlePrev}
+                      disabled={currentPage <= 1 || isFlipping}
+                      className="flex items-center gap-1 text-sm opacity-60 hover:opacity-100 disabled:opacity-20 transition-opacity"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      <span className="hidden sm:inline">Prev</span>
+                    </button>
+                  ) : (
+                    <div />
+                  )}
+
+                  {/* Page number */}
+                  <span className="text-xs opacity-50">{page.pageNumber}</span>
+
+                  {/* Next button - show on last visible page only */}
+                  {idx === currentPages.length - 1 ? (
+                    <button
+                      onClick={handleNext}
+                      disabled={currentPage >= totalPages || isFlipping}
+                      className="flex items-center gap-1 text-sm opacity-60 hover:opacity-100 disabled:opacity-20 transition-opacity"
+                    >
+                      <span className="hidden sm:inline">Next</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  ) : (
+                    <div />
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
