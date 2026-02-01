@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { useEffect, useRef, useCallback, forwardRef, useImperativeHandle, useState } from 'react';
 // @ts-expect-error - page-flip doesn't have type declarations
 import { PageFlip as StPageFlip } from 'page-flip';
 import type { PageContent, ReadingMode } from '../../types';
@@ -37,11 +37,30 @@ const modeStyles: Record<ReadingMode, { bg: string; text: string; pageBg: string
   },
 };
 
+// Hook to detect if screen is wide enough for 2-page view
+function useIsWideScreen() {
+  const [isWide, setIsWide] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 768 : false
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsWide(window.innerWidth >= 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return isWide;
+}
+
 export const PageFlipComponent = forwardRef<PageFlipHandle, PageFlipProps>(
   ({ pages, currentPage, onPageChange, mode, fontSize, fontFamily, lineHeight }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const pageFlipRef = useRef<StPageFlip | null>(null);
     const pagesRef = useRef<HTMLDivElement>(null);
+    const isWideScreen = useIsWideScreen();
 
     const styles = modeStyles[mode];
 
@@ -73,22 +92,27 @@ export const PageFlipComponent = forwardRef<PageFlipHandle, PageFlipProps>(
         pageFlipRef.current.destroy();
       }
 
+      // Calculate dimensions based on screen mode
+      const isSinglePage = !isWideScreen;
+      const pageWidth = isSinglePage ? 350 : 400;
+      const pageHeight = isSinglePage ? 550 : 600;
+
       // Create new PageFlip instance
       const pageFlip = new StPageFlip(pagesRef.current, {
-        width: 400,
-        height: 600,
+        width: pageWidth,
+        height: pageHeight,
         size: 'stretch',
-        minWidth: 300,
-        maxWidth: 600,
-        minHeight: 400,
-        maxHeight: 900,
-        showCover: false,
+        minWidth: isSinglePage ? 280 : 300,
+        maxWidth: isSinglePage ? 450 : 600,
+        minHeight: isSinglePage ? 400 : 450,
+        maxHeight: isSinglePage ? 700 : 900,
+        showCover: true,
         mobileScrollSupport: true,
         swipeDistance: 30,
         clickEventForward: true,
         useMouseEvents: true,
-        flippingTime: 800,
-        usePortrait: true,
+        flippingTime: 600,
+        usePortrait: isSinglePage, // Single page on mobile, double page on desktop
         startPage: currentPage - 1,
         autoSize: true,
         maxShadowOpacity: 0.5,
@@ -107,7 +131,7 @@ export const PageFlipComponent = forwardRef<PageFlipHandle, PageFlipProps>(
       return () => {
         pageFlip.destroy();
       };
-    }, [pages, handleFlip]);
+    }, [pages, handleFlip, isWideScreen]);
 
     // Navigate to page when currentPage changes externally
     useEffect(() => {
@@ -127,7 +151,11 @@ export const PageFlipComponent = forwardRef<PageFlipHandle, PageFlipProps>(
         <div
           ref={pagesRef}
           className="page-flip-container"
-          style={{ width: '100%', maxWidth: '900px', height: '100%' }}
+          style={{
+            width: '100%',
+            maxWidth: isWideScreen ? '1200px' : '500px',
+            height: '100%',
+          }}
         >
           {pages.map((page) => (
             <div

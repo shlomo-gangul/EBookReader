@@ -23,21 +23,47 @@
 
 /* Page flip styles */
 .page-flip-container {
-  perspective: 1500px;
+  perspective: 2000px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .page {
   background-color: white;
   overflow: hidden;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  box-shadow: 0 4px 20px -2px rgb(0 0 0 / 0.2);
+  border-radius: 0 4px 4px 0;
 }
 
 .page.--left {
   border-right: 1px solid #e2e8f0;
+  border-radius: 4px 0 0 4px;
+  box-shadow: -4px 4px 20px -2px rgb(0 0 0 / 0.15);
 }
 
 .page.--right {
   border-left: 1px solid #e2e8f0;
+  border-radius: 0 4px 4px 0;
+  box-shadow: 4px 4px 20px -2px rgb(0 0 0 / 0.15);
+}
+
+/* Single page mode (mobile/portrait) */
+@media (max-width: 767px) {
+  .page-flip-container {
+    padding: 1rem;
+  }
+
+  .page {
+    border-radius: 4px;
+  }
+}
+
+/* Two-page mode (desktop/landscape) */
+@media (min-width: 768px) {
+  .page-flip-container {
+    padding: 2rem;
+  }
 }
 
 /* Sepia mode */
