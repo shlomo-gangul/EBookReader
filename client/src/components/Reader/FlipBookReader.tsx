@@ -64,25 +64,26 @@ const Page = forwardRef<HTMLDivElement, {
   styles: typeof modeStyles.day;
   contentStyle: React.CSSProperties;
 }>(({ page, styles, contentStyle }, ref) => {
+  // In a book spread: odd pages (1,3,5) are on right, even pages (2,4,6) are on left
+  const isLeftPage = page.pageNumber % 2 === 0;
+
+  // Inset shadow on spine side creates depth without affecting child content
+  const spineEdgeShadow = isLeftPage
+    ? 'inset -20px 0 30px -20px rgba(0,0,0,0.15)' // Right edge shadow for left page
+    : 'inset 20px 0 30px -20px rgba(0,0,0,0.15)'; // Left edge shadow for right page
+
   return (
     <div
       ref={ref}
       className={`${styles.pageBg} h-full w-full`}
       style={{
         backgroundColor: styles.pageBgHex,
-        background: styles.pageBgHex,
-        backfaceVisibility: 'hidden',
-        WebkitBackfaceVisibility: 'hidden',
+        boxShadow: spineEdgeShadow,
       }}
     >
       <div
-        className={`h-full w-full px-8 py-6 overflow-auto ${styles.text} ${styles.pageBg}`}
-        style={{
-          ...contentStyle,
-          backgroundColor: styles.pageBgHex,
-          backfaceVisibility: 'hidden',
-          WebkitBackfaceVisibility: 'hidden',
-        }}
+        className={`h-full w-full px-8 py-6 overflow-auto ${styles.text}`}
+        style={contentStyle}
       >
         {page.content ? (
           <div className="whitespace-pre-wrap">{page.content}</div>
@@ -324,19 +325,18 @@ export function FlipBookReader({
             }}
           />
         )}
-        {/* Spine shadow - center crease - lowered z-index to be behind pages */}
+        {/* Center spine crease shadow */}
         {pages.length > 0 && bookSize.width > 0 && (
           <div
             className="absolute pointer-events-none"
             style={{
-              width: 20,
-              height: bookSize.height + 8,
-              background: 'linear-gradient(to right, rgba(0,0,0,0.15), rgba(0,0,0,0.4), rgba(0,0,0,0.15))',
-              borderRadius: '50%',
+              width: 8,
+              height: bookSize.height,
+              background: 'linear-gradient(to right, rgba(0,0,0,0.1), rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.1))',
               left: '50%',
               top: '50%',
               transform: 'translate(-50%, -50%)',
-              zIndex: 4,
+              zIndex: 15,
             }}
           />
         )}

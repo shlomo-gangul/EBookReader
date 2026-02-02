@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { useState, useCallback, useEffect } from 'react';
+import { Routes, Route, useNavigate, useParams } from 'react-router-dom';
 import { BookOpen, Upload, Library, Menu, X, TrendingUp } from 'lucide-react';
 import { SearchBar, BookGrid, BookCard } from './components/Library';
 import { FlipBookReader } from './components/Reader';
@@ -13,79 +13,59 @@ import { useBookStore } from './store';
 import { Spinner } from './components/common';
 import type { Book } from './types';
 
-type ViewState = 'library' | 'details' | 'reader';
+// Helper to save/load book from localStorage
+const BOOK_STORAGE_KEY = 'current_book';
 
-function HomePage() {
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [showUploader, setShowUploader] = useState(false);
-  const [viewState, setViewState] = useState<ViewState>('library');
-  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+function saveBookToStorage(book: Book) {
+  localStorage.setItem(BOOK_STORAGE_KEY, JSON.stringify(book));
+}
 
-  const { recentBooks, settings, updateSettings, currentPage, setCurrentPage } = useBookStore();
-  const { books, isLoading, hasMore, search, loadMore, clearSearch } = useLibrary();
-  const { loadBook, loadPdfFile, pages, isLoading: bookLoading, error } = useBookReader();
-  const { genreBooks, isLoading: genresLoading } = usePopularBooks();
+function loadBookFromStorage(): Book | null {
+  try {
+    const stored = localStorage.getItem(BOOK_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+}
+
+// Reader Page Component
+function ReaderPage() {
+  const navigate = useNavigate();
+  const { bookId } = useParams<{ bookId: string }>();
+  const { settings, updateSettings, currentPage, setCurrentPage } = useBookStore();
+  const { loadBook, pages, isLoading: bookLoading, error } = useBookReader();
   const { bookmarks, addBookmark, removeBookmark } = useReadingProgress();
+  const [initialized, setInitialized] = useState(false);
 
-  const handleBookClick = useCallback((book: Book) => {
-    setSelectedBook(book);
-    setViewState('details');
-  }, []);
+  useEffect(() => {
+    const initReader = async () => {
+      if (initialized) return;
 
-  const handleStartReading = useCallback(async () => {
-    if (selectedBook) {
-      await loadBook(selectedBook);
-      setViewState('reader');
+      const storedBook = loadBookFromStorage();
+      if (storedBook && storedBook.id === bookId) {
+        await loadBook(storedBook);
+      } else {
+        // No matching book found, go back to home
+        navigate('/');
+        return;
+      }
+      setInitialized(true);
+    };
+
+    initReader();
+  }, [bookId, loadBook, navigate, initialized]);
+
+  const handleClose = useCallback(() => {
+    const storedBook = loadBookFromStorage();
+    if (storedBook) {
+      navigate(`/book/${storedBook.id}`);
+    } else {
+      navigate('/');
     }
-  }, [selectedBook, loadBook]);
+  }, [navigate]);
 
-  const handlePdfUpload = useCallback(async (file: File) => {
-    await loadPdfFile(file);
-    setShowUploader(false);
-    setViewState('reader');
-  }, [loadPdfFile]);
-
-  const handleBackToLibrary = useCallback(() => {
-    setViewState('library');
-    setSelectedBook(null);
-  }, []);
-
-  const handleBackToDetails = useCallback(() => {
-    setViewState('details');
-  }, []);
-
-  // Show Reader
-  if (viewState === 'reader' && pages.length > 0) {
-    return (
-      <FlipBookReader
-        pages={pages}
-        currentPage={currentPage}
-        totalPages={pages.length}
-        settings={settings}
-        bookmarks={bookmarks}
-        onPageChange={setCurrentPage}
-        onSettingsChange={updateSettings}
-        onAddBookmark={() => addBookmark()}
-        onRemoveBookmark={removeBookmark}
-        onClose={handleBackToDetails}
-      />
-    );
-  }
-
-  // Show Book Details
-  if (viewState === 'details' && selectedBook) {
-    return (
-      <BookDetails
-        book={selectedBook}
-        onBack={handleBackToLibrary}
-        onStartReading={handleStartReading}
-        onBookClick={handleBookClick}
-      />
-    );
-  }
-
-  // Show Loading while book is loading
-  if (bookLoading) {
+  if (bookLoading || !initialized) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-center">
@@ -96,14 +76,13 @@ function HomePage() {
     );
   }
 
-  // Show Error
   if (error) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-center max-w-md px-4">
           <p className="text-red-400 mb-4">{error}</p>
           <button
-            onClick={handleBackToLibrary}
+            onClick={() => navigate('/')}
             className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors text-white"
           >
             Go Back
@@ -112,6 +91,106 @@ function HomePage() {
       </div>
     );
   }
+
+  if (pages.length === 0) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <Spinner size="lg" />
+          <p className="mt-4 text-slate-400">Loading pages...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <FlipBookReader
+      pages={pages}
+      currentPage={currentPage}
+      totalPages={pages.length}
+      settings={settings}
+      bookmarks={bookmarks}
+      onPageChange={setCurrentPage}
+      onSettingsChange={updateSettings}
+      onAddBookmark={() => addBookmark()}
+      onRemoveBookmark={removeBookmark}
+      onClose={handleClose}
+    />
+  );
+}
+
+// Book Details Page Component
+function BookDetailsPage() {
+  const navigate = useNavigate();
+  const { bookId } = useParams<{ bookId: string }>();
+  const [book, setBook] = useState<Book | null>(null);
+
+  useEffect(() => {
+    const storedBook = loadBookFromStorage();
+    if (storedBook && storedBook.id === bookId) {
+      setBook(storedBook);
+    } else {
+      navigate('/');
+    }
+  }, [bookId, navigate]);
+
+  const handleStartReading = useCallback(() => {
+    if (book) {
+      navigate(`/read/${book.id}`);
+    }
+  }, [book, navigate]);
+
+  const handleBookClick = useCallback((clickedBook: Book) => {
+    saveBookToStorage(clickedBook);
+    navigate(`/book/${clickedBook.id}`);
+  }, [navigate]);
+
+  if (!book) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  return (
+    <BookDetails
+      book={book}
+      onBack={() => navigate('/')}
+      onStartReading={handleStartReading}
+      onBookClick={handleBookClick}
+    />
+  );
+}
+
+function HomePage() {
+  const navigate = useNavigate();
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showUploader, setShowUploader] = useState(false);
+
+  const { recentBooks } = useBookStore();
+  const { books, isLoading, hasMore, search, loadMore, clearSearch } = useLibrary();
+  const { loadPdfFile, isLoading: bookLoading } = useBookReader();
+  const { genreBooks, isLoading: genresLoading } = usePopularBooks();
+
+  const handleBookClick = useCallback((book: Book) => {
+    saveBookToStorage(book);
+    navigate(`/book/${book.id}`);
+  }, [navigate]);
+
+  const handlePdfUpload = useCallback(async (file: File) => {
+    await loadPdfFile(file);
+    setShowUploader(false);
+    // For PDF, create a temporary book object
+    const pdfBook: Book = {
+      id: `pdf-${Date.now()}`,
+      title: file.name.replace('.pdf', ''),
+      authors: [],
+      source: 'pdf',
+    };
+    saveBookToStorage(pdfBook);
+    navigate(`/read/${pdfBook.id}`);
+  }, [loadPdfFile, navigate]);
 
   // Show Library (default view)
   return (
@@ -288,6 +367,8 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
+      <Route path="/book/:bookId" element={<BookDetailsPage />} />
+      <Route path="/read/:bookId" element={<ReaderPage />} />
     </Routes>
   );
 }
