@@ -119,3 +119,61 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* react-pageflip overrides - ensure pages have background during animation */
+.stf__parent {
+  transform-style: preserve-3d;
+}
+
+.stf__wrapper {
+  background-color: #fefce8 !important;
+}
+
+.stf__page,
+.stf__item,
+.stf__block,
+.stf__page--soft,
+.stf__page--hard {
+  background-color: #fefce8 !important;
+  backface-visibility: hidden !important;
+  -webkit-backface-visibility: hidden !important;
+}
+
+.stf__page > div,
+.stf__item > div,
+.stf__page--soft > div,
+.stf__page--hard > div {
+  background-color: #fefce8 !important;
+  backface-visibility: hidden !important;
+  -webkit-backface-visibility: hidden !important;
+}
+
+/* Target the flipping page specifically */
+.stf__page.--flipping,
+.stf__page.--active {
+  background-color: #fefce8 !important;
+}
+
+/* Night mode pages */
+.night-mode .stf__wrapper,
+.night-mode .stf__page,
+.night-mode .stf__item,
+.night-mode .stf__block,
+.night-mode .stf__page > div,
+.night-mode .stf__item > div,
+.night-mode .stf__page.--flipping,
+.night-mode .stf__page.--active {
+  background-color: #1e293b !important;
+}
+
+/* Sepia mode pages */
+.sepia-mode .stf__wrapper,
+.sepia-mode .stf__page,
+.sepia-mode .stf__item,
+.sepia-mode .stf__block,
+.sepia-mode .stf__page > div,
+.sepia-mode .stf__item > div,
+.sepia-mode .stf__page.--flipping,
+.sepia-mode .stf__page.--active {
+  background-color: #fef3c7 !important;
+}

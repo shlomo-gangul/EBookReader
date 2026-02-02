@@ -7,6 +7,11 @@ interface GenreBooks {
   books: Book[];
 }
 
+interface CachedData {
+  genreBooks: GenreBooks[];
+  timestamp: number;
+}
+
 const GENRES = [
   { name: 'Fiction', topic: 'fiction' },
   { name: 'Science Fiction', topic: 'science fiction' },
@@ -16,20 +21,42 @@ const GENRES = [
   { name: 'History', topic: 'history' },
 ];
 
+const CACHE_KEY = 'popular_books_cache';
+const CACHE_DURATION = 1000 * 60 * 60; // 1 hour
+const REQUEST_DELAY = 500; // 500ms between requests to avoid rate limiting
+
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export function usePopularBooks() {
   const [genreBooks, setGenreBooks] = useState<GenreBooks[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchPopularBooks = async () => {
+      // Check cache first
+      try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+          const data: CachedData = JSON.parse(cached);
+          if (Date.now() - data.timestamp < CACHE_DURATION) {
+            setGenreBooks(data.genreBooks);
+            setIsLoading(false);
+            return;
+          }
+        }
+      } catch {
+        // Cache read failed, continue to fetch
+      }
+
       setIsLoading(true);
       const results: GenreBooks[] = [];
 
+      // Stagger requests to avoid rate limiting
       for (const genre of GENRES) {
         try {
           const response = await axios.get(
             `https://gutendex.com/books?topic=${genre.topic}&sort=popular`,
-            { timeout: 10000 }
+            { timeout: 30000 }
           );
 
           const books: Book[] = response.data.results.slice(0, 6).map((book: {
@@ -56,10 +83,25 @@ export function usePopularBooks() {
 
           if (books.length > 0) {
             results.push({ genre: genre.name, books });
+            // Update UI progressively as genres load
+            setGenreBooks([...results]);
           }
+
+          // Delay between requests to be nice to the API
+          await delay(REQUEST_DELAY);
         } catch (error) {
           console.error(`Failed to fetch ${genre.name} books:`, error);
         }
+      }
+
+      // Cache the results
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({
+          genreBooks: results,
+          timestamp: Date.now(),
+        }));
+      } catch {
+        // Cache write failed, not critical
       }
 
       setGenreBooks(results);

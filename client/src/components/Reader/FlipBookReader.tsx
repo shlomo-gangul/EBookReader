@@ -50,6 +50,7 @@ interface FlipBookReaderProps {
   totalPages: number;
   settings: ReaderSettings;
   bookmarks: BookmarkType[];
+  coverColor?: string; // Color extracted from book cover
   onPageChange: (page: number) => void;
   onSettingsChange: (settings: Partial<ReaderSettings>) => void;
   onAddBookmark: () => void;
@@ -67,11 +68,21 @@ const Page = forwardRef<HTMLDivElement, {
     <div
       ref={ref}
       className={`${styles.pageBg} h-full w-full`}
-      style={{ backgroundColor: styles.pageBgHex }}
+      style={{
+        backgroundColor: styles.pageBgHex,
+        background: styles.pageBgHex,
+        backfaceVisibility: 'hidden',
+        WebkitBackfaceVisibility: 'hidden',
+      }}
     >
       <div
-        className={`h-full w-full px-8 py-6 overflow-auto ${styles.text}`}
-        style={contentStyle}
+        className={`h-full w-full px-8 py-6 overflow-auto ${styles.text} ${styles.pageBg}`}
+        style={{
+          ...contentStyle,
+          backgroundColor: styles.pageBgHex,
+          backfaceVisibility: 'hidden',
+          WebkitBackfaceVisibility: 'hidden',
+        }}
       >
         {page.content ? (
           <div className="whitespace-pre-wrap">{page.content}</div>
@@ -93,6 +104,7 @@ export function FlipBookReader({
   totalPages,
   settings,
   bookmarks,
+  coverColor = '#8B4513', // Default to a leather brown
   onPageChange,
   onSettingsChange,
   onAddBookmark,
@@ -120,8 +132,8 @@ export function FlipBookReader({
         // Standard book page ratio is roughly 6:9 (width:height) or 2:3
         const bookRatio = 6 / 9; // width = height * 0.667
 
-        // Use 99% of container height
-        let pageHeight = containerHeight * 0.99;
+        // Use 95% of container height so book cover is visible
+        let pageHeight = containerHeight * 0.95;
         let pageWidth = pageHeight * bookRatio;
 
         // Make sure two pages fit in the width
@@ -193,7 +205,7 @@ export function FlipBookReader({
   ];
 
   return (
-    <div className={`fixed inset-0 z-50 ${styles.bg} flex flex-col`}>
+    <div className={`fixed inset-0 z-50 ${styles.bg} flex flex-col ${settings.mode}-mode`}>
       {/* Top Bar */}
       <div className="flex-shrink-0 flex items-center justify-between p-4 bg-black/20">
         <button
@@ -232,29 +244,99 @@ export function FlipBookReader({
         ref={containerRef}
         className="flex-1 flex items-center justify-center p-4 overflow-hidden relative"
       >
-        {/* Book cover behind pages */}
+        {/* Outer hardcover - the book cover visible from above */}
+        {pages.length > 0 && bookSize.width > 0 && (
+          <div
+            className="absolute pointer-events-none"
+            style={{
+              width: bookSize.width * 2 + 40,
+              height: bookSize.height + 40,
+              background: coverColor,
+              borderRadius: '4px 12px 12px 4px',
+              boxShadow: `
+                0 30px 60px rgba(0,0,0,0.5),
+                inset 0 0 30px rgba(0,0,0,0.3),
+                inset 2px 0 4px rgba(255,255,255,0.1)
+              `,
+              left: '50%',
+              top: '50%',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 1,
+            }}
+          />
+        )}
+        {/* Inner cover / binding - darker shade of cover */}
         {pages.length > 0 && bookSize.width > 0 && (
           <div
             className="absolute pointer-events-none"
             style={{
               width: bookSize.width * 2 + 24,
               height: bookSize.height + 24,
-              background: '#1a1a1a',
-              borderRadius: '8px',
-              boxShadow: '0 25px 60px rgba(0,0,0,0.6)',
+              background: `linear-gradient(to right,
+                rgba(0,0,0,0.4) 0%,
+                rgba(0,0,0,0.1) 2%,
+                rgba(0,0,0,0.05) 49%,
+                rgba(0,0,0,0.3) 50%,
+                rgba(0,0,0,0.05) 51%,
+                rgba(0,0,0,0.1) 98%,
+                rgba(0,0,0,0.4) 100%
+              )`,
+              borderRadius: '2px',
+              left: '50%',
+              top: '50%',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 2,
             }}
           />
         )}
-        {/* Page edges / stack effect */}
+        {/* Page stack - visible page edges */}
         {pages.length > 0 && bookSize.width > 0 && (
           <div
             className="absolute pointer-events-none"
             style={{
               width: bookSize.width * 2 + 8,
               height: bookSize.height + 8,
-              background: 'linear-gradient(to bottom, #f5f5f0, #e0e0d8)',
-              borderRadius: '2px',
-              boxShadow: 'inset 0 0 10px rgba(0,0,0,0.1)',
+              background: 'linear-gradient(to bottom, #fafaf5, #e8e8e0)',
+              borderRadius: '1px',
+              boxShadow: `
+                inset 0 1px 0 rgba(255,255,255,0.5),
+                inset 0 -1px 0 rgba(0,0,0,0.1)
+              `,
+              left: '50%',
+              top: '50%',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 3,
+            }}
+          />
+        )}
+        {/* Solid page background - prevents transparency during flip */}
+        {pages.length > 0 && bookSize.width > 0 && (
+          <div
+            className="absolute pointer-events-none"
+            style={{
+              width: bookSize.width * 2 + 20,
+              height: bookSize.height + 20,
+              backgroundColor: styles.pageBgHex,
+              left: '50%',
+              top: '50%',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 9,
+            }}
+          />
+        )}
+        {/* Spine shadow - center crease - lowered z-index to be behind pages */}
+        {pages.length > 0 && bookSize.width > 0 && (
+          <div
+            className="absolute pointer-events-none"
+            style={{
+              width: 20,
+              height: bookSize.height + 8,
+              background: 'linear-gradient(to right, rgba(0,0,0,0.15), rgba(0,0,0,0.4), rgba(0,0,0,0.15))',
+              borderRadius: '50%',
+              left: '50%',
+              top: '50%',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 4,
             }}
           />
         )}
@@ -268,8 +350,8 @@ export function FlipBookReader({
               maxWidth={1500}
               minHeight={300}
               maxHeight={2000}
-              drawShadow={true}
-              flippingTime={500}
+              drawShadow={false}
+              flippingTime={300}
               usePortrait={true}
               startPage={currentPage - 1}
               showCover={false}
@@ -282,7 +364,7 @@ export function FlipBookReader({
               disableFlipByClick={false}
               onFlip={onFlip}
               className="shadow-2xl relative z-10"
-              style={{}}
+              style={{ backgroundColor: styles.pageBgHex }}
               startZIndex={0}
               autoSize={true}
               renderOnlyPageLengthChange={false}
