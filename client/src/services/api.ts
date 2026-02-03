@@ -31,6 +31,23 @@ export const getGutenbergText = async (id: string): Promise<string> => {
   return data.content;
 };
 
+// Internet Archive API
+export const getInternetArchiveText = async (id: string): Promise<string> => {
+  const { data } = await api.get(`/books/internetarchive/${id}/text`);
+  return data.content;
+};
+
+export const getInternetArchiveFormats = async (id: string): Promise<{
+  epub?: string;
+  pdf?: string;
+  text?: string;
+  html?: string;
+  mobi?: string;
+}> => {
+  const { data } = await api.get(`/books/internetarchive/${id}/formats`);
+  return data;
+};
+
 // PDF API
 export const uploadPdf = async (file: File): Promise<PdfUploadResult> => {
   const formData = new FormData();

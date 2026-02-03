@@ -9,7 +9,7 @@ export interface Book {
   publisher?: string;
   language?: string;
   pageCount?: number;
-  source: 'openlibrary' | 'gutenberg' | 'pdf';
+  source: 'openlibrary' | 'gutenberg' | 'pdf' | 'internetarchive' | 'epub';
   downloadUrl?: string;
   formats?: BookFormats;
 }
@@ -72,6 +72,7 @@ export interface ReaderSettings {
   fontFamily: FontFamily;
   lineHeight: number;
   marginSize: 'small' | 'medium' | 'large';
+  readerMode: 'flip' | 'scroll';
 }
 
 export interface PageContent {

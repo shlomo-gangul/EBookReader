@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Routes, Route, useNavigate, useParams } from 'react-router-dom';
-import { BookOpen, Upload, Library, Menu, X, TrendingUp } from 'lucide-react';
+import { BookOpen, Upload, Library, Menu, X, TrendingUp, BookText, ScrollText } from 'lucide-react';
 import { SearchBar, BookGrid, BookCard } from './components/Library';
-import { FlipBookReader } from './components/Reader';
+import { FlipBookReader, ScrollReader } from './components/Reader';
 import { BookDetails } from './components/BookDetails';
 import { PdfUploader } from './components/Upload';
 import { useLibrary } from './hooks/useLibrary';
@@ -103,19 +103,42 @@ function ReaderPage() {
     );
   }
 
+  const handleToggleReaderMode = useCallback(() => {
+    const newMode = settings.readerMode === 'flip' ? 'scroll' : 'flip';
+    updateSettings({ readerMode: newMode });
+  }, [settings.readerMode, updateSettings]);
+
+  // Render the appropriate reader based on settings
+  const ReaderComponent = settings.readerMode === 'scroll' ? ScrollReader : FlipBookReader;
+
   return (
-    <FlipBookReader
-      pages={pages}
-      currentPage={currentPage}
-      totalPages={pages.length}
-      settings={settings}
-      bookmarks={bookmarks}
-      onPageChange={setCurrentPage}
-      onSettingsChange={updateSettings}
-      onAddBookmark={() => addBookmark()}
-      onRemoveBookmark={removeBookmark}
-      onClose={handleClose}
-    />
+    <>
+      {/* Reader Mode Toggle - floating button */}
+      <button
+        onClick={handleToggleReaderMode}
+        className="fixed top-4 right-24 z-[60] p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
+        title={settings.readerMode === 'flip' ? 'Switch to Scroll Mode' : 'Switch to Flip Mode'}
+      >
+        {settings.readerMode === 'flip' ? (
+          <ScrollText className="w-5 h-5" />
+        ) : (
+          <BookText className="w-5 h-5" />
+        )}
+      </button>
+
+      <ReaderComponent
+        pages={pages}
+        currentPage={currentPage}
+        totalPages={pages.length}
+        settings={settings}
+        bookmarks={bookmarks}
+        onPageChange={setCurrentPage}
+        onSettingsChange={updateSettings}
+        onAddBookmark={() => addBookmark()}
+        onRemoveBookmark={removeBookmark}
+        onClose={handleClose}
+      />
+    </>
   );
 }
 
@@ -170,7 +193,7 @@ function HomePage() {
 
   const { recentBooks } = useBookStore();
   const { books, isLoading, hasMore, search, loadMore, clearSearch } = useLibrary();
-  const { loadPdfFile, isLoading: bookLoading } = useBookReader();
+  const { loadPdfFile, loadEpubFile, isLoading: bookLoading } = useBookReader();
   const { genreBooks, isLoading: genresLoading } = usePopularBooks();
 
   const handleBookClick = useCallback((book: Book) => {
@@ -192,6 +215,20 @@ function HomePage() {
     navigate(`/read/${pdfBook.id}`);
   }, [loadPdfFile, navigate]);
 
+  const handleEpubUpload = useCallback(async (file: File) => {
+    await loadEpubFile(file);
+    setShowUploader(false);
+    // For EPUB, create a temporary book object
+    const epubBook: Book = {
+      id: `epub-${Date.now()}`,
+      title: file.name.replace('.epub', ''),
+      authors: [],
+      source: 'epub',
+    };
+    saveBookToStorage(epubBook);
+    navigate(`/read/${epubBook.id}`);
+  }, [loadEpubFile, navigate]);
+
   // Show Library (default view)
   return (
     <div className="min-h-screen bg-slate-900">
@@ -211,7 +248,7 @@ function HomePage() {
                 className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors"
               >
                 <Upload className="w-5 h-5" />
-                Upload PDF
+                Upload Book
               </button>
             </nav>
 
@@ -235,7 +272,7 @@ function HomePage() {
                 className="flex items-center gap-2 w-full px-4 py-2 text-slate-300 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors"
               >
                 <Upload className="w-5 h-5" />
-                Upload PDF
+                Upload Book
               </button>
             </nav>
           )}
@@ -251,8 +288,8 @@ function HomePage() {
               Discover Your Next Read
             </h2>
             <p className="text-slate-400 max-w-2xl mx-auto">
-              Search millions of free books from Open Library and Project Gutenberg,
-              or upload your own PDFs for a beautiful reading experience.
+              Search millions of free books from Open Library, Project Gutenberg, and Internet Archive,
+              or upload your own PDFs and EPUBs for a beautiful reading experience.
             </p>
           </div>
           <SearchBar onSearch={search} onClear={clearSearch} isLoading={isLoading} />
@@ -321,7 +358,7 @@ function HomePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-slate-800 rounded-xl shadow-2xl max-w-xl w-full p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-slate-100">Upload PDF</h2>
+              <h2 className="text-xl font-semibold text-slate-100">Upload Book</h2>
               <button
                 onClick={() => setShowUploader(false)}
                 className="p-1 rounded-lg hover:bg-slate-700 transition-colors"
@@ -329,7 +366,7 @@ function HomePage() {
                 <X className="w-5 h-5 text-slate-400" />
               </button>
             </div>
-            <PdfUploader onUpload={handlePdfUpload} isLoading={bookLoading} />
+            <PdfUploader onUpload={handlePdfUpload} onEpubUpload={handleEpubUpload} isLoading={bookLoading} />
           </div>
         </div>
       )}
@@ -346,8 +383,8 @@ function HomePage() {
               className="text-blue-400 hover:text-blue-300"
             >
               Open Library
-            </a>{' '}
-            and{' '}
+            </a>
+            ,{' '}
             <a
               href="https://www.gutenberg.org"
               target="_blank"
@@ -355,6 +392,15 @@ function HomePage() {
               className="text-blue-400 hover:text-blue-300"
             >
               Project Gutenberg
+            </a>
+            , and{' '}
+            <a
+              href="https://archive.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-400 hover:text-blue-300"
+            >
+              Internet Archive
             </a>
           </p>
         </div>

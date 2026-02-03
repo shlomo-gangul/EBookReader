@@ -45,7 +45,12 @@ export function saveReaderSettings(settings: ReaderSettings): void {
 export function getReaderSettings(): ReaderSettings {
   const data = localStorage.getItem(SETTINGS_KEY);
   if (data) {
-    return JSON.parse(data);
+    const settings = JSON.parse(data);
+    // Ensure readerMode is set (for backwards compatibility)
+    if (!settings.readerMode) {
+      settings.readerMode = 'flip';
+    }
+    return settings;
   }
   // Default settings
   return {
@@ -54,6 +59,7 @@ export function getReaderSettings(): ReaderSettings {
     fontFamily: 'serif',
     lineHeight: 1.6,
     marginSize: 'medium',
+    readerMode: 'flip',
   };
 }
 

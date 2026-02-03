@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback, forwardRef, useImperativeHandle, useState } from 'react';
 // @ts-expect-error - page-flip doesn't have type declarations
 import { PageFlip as StPageFlip } from 'page-flip';
-import type { PageContent, ReadingMode } from '../../types';
+import type { PageContent, ReadingMode, FontFamily } from '../../types';
 
 interface PageFlipProps {
   pages: PageContent[];
@@ -9,7 +9,7 @@ interface PageFlipProps {
   onPageChange: (page: number) => void;
   mode: ReadingMode;
   fontSize: number;
-  fontFamily: 'serif' | 'sans';
+  fontFamily: FontFamily;
   lineHeight: number;
 }
 
@@ -168,7 +168,10 @@ export const PageFlipComponent = forwardRef<PageFlipHandle, PageFlipProps>(
                 className={`w-full h-full p-6 md:p-10 overflow-hidden ${styles.text}`}
                 style={{
                   fontSize: `${fontSize}px`,
-                  fontFamily: fontFamily === 'serif' ? 'Merriweather, Georgia, serif' : 'Inter, system-ui, sans-serif',
+                  fontFamily: fontFamily === 'serif' ? 'Merriweather, Georgia, serif'
+                    : fontFamily === 'georgia' ? 'Georgia, Times New Roman, serif'
+                    : fontFamily === 'literata' ? 'Literata, Georgia, serif'
+                    : 'Inter, system-ui, sans-serif',
                   lineHeight: lineHeight,
                 }}
               >

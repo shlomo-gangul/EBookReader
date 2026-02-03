@@ -4,17 +4,21 @@ import { Button, Spinner } from '../common';
 
 interface PdfUploaderProps {
   onUpload: (file: File) => Promise<void>;
+  onEpubUpload?: (file: File) => Promise<void>;
   isLoading: boolean;
 }
 
-export function PdfUploader({ onUpload, isLoading }: PdfUploaderProps) {
+export function PdfUploader({ onUpload, onEpubUpload, isLoading }: PdfUploaderProps) {
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const validateFile = (file: File): boolean => {
-    if (!file.type.includes('pdf')) {
-      setError('Please select a PDF file');
+    const isPdf = file.type.includes('pdf') || file.name.toLowerCase().endsWith('.pdf');
+    const isEpub = file.type === 'application/epub+zip' || file.name.toLowerCase().endsWith('.epub');
+
+    if (!isPdf && !isEpub) {
+      setError('Please select a PDF or EPUB file');
       return false;
     }
     if (file.size > 100 * 1024 * 1024) {
@@ -56,7 +60,12 @@ export function PdfUploader({ onUpload, isLoading }: PdfUploaderProps) {
   const handleUpload = async () => {
     if (selectedFile) {
       try {
-        await onUpload(selectedFile);
+        const isEpub = selectedFile.name.toLowerCase().endsWith('.epub');
+        if (isEpub && onEpubUpload) {
+          await onEpubUpload(selectedFile);
+        } else {
+          await onUpload(selectedFile);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Upload failed');
       }
@@ -105,25 +114,25 @@ export function PdfUploader({ onUpload, isLoading }: PdfUploaderProps) {
             </div>
             <Button onClick={handleUpload} disabled={isLoading}>
               <Upload className="w-4 h-4 mr-2" />
-              Open PDF
+              Open File
             </Button>
           </div>
         ) : (
           <>
             <Upload className="w-12 h-12 mx-auto text-slate-500 mb-4" />
             <p className="text-slate-300 mb-2">
-              Drag and drop your PDF here, or{' '}
+              Drag and drop your file here, or{' '}
               <label className="text-blue-400 hover:text-blue-300 cursor-pointer">
                 browse
                 <input
                   type="file"
-                  accept=".pdf,application/pdf"
+                  accept=".pdf,.epub,application/pdf,application/epub+zip"
                   onChange={handleFileSelect}
                   className="hidden"
                 />
               </label>
             </p>
-            <p className="text-sm text-slate-500">PDF files up to 100MB</p>
+            <p className="text-sm text-slate-500">PDF or EPUB files up to 100MB</p>
           </>
         )}
       </div>

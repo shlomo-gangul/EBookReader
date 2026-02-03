@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as openLibrary from '../services/openLibrary.js';
 import * as gutenberg from '../services/gutenberg.js';
+import * as internetArchive from '../services/internetArchive.js';
 import * as cache from '../services/cacheManager.js';
 
 const router = Router();
@@ -23,7 +24,7 @@ router.get('/search', async (req, res) => {
       return res.json(cached);
     }
 
-    type BookType = ReturnType<typeof openLibrary.transformToBook> | ReturnType<typeof gutenberg.transformToBook>;
+    type BookType = ReturnType<typeof openLibrary.transformToBook> | ReturnType<typeof gutenberg.transformToBook> | ReturnType<typeof internetArchive.transformToBook>;
     let allBooks: BookType[] = [];
     let total = 0;
     let hasMore = false;
@@ -49,6 +50,18 @@ router.get('/search', async (req, res) => {
         hasMore = hasMore || olResult.hasMore;
       } catch (error) {
         console.error('Open Library search error:', error);
+      }
+    }
+
+    if (!source || source === 'all' || source === 'internetarchive') {
+      try {
+        const iaResult = await internetArchive.searchBooks(q, pageNum);
+        const iaBooks = iaResult.books.map(internetArchive.transformToBook);
+        allBooks = [...allBooks, ...iaBooks];
+        total += iaResult.total;
+        hasMore = hasMore || iaResult.hasMore;
+      } catch (error) {
+        console.error('Internet Archive search error:', error);
       }
     }
 
@@ -104,6 +117,13 @@ router.get('/:id', async (req, res) => {
           source: 'openlibrary',
         };
       }
+    } else if (source === 'internetarchive') {
+      const item = await internetArchive.getItem(id);
+      if (item) {
+        book = internetArchive.transformMetadataToBook(item);
+        const formats = await internetArchive.getAvailableFormats(id);
+        book.formats = formats;
+      }
     }
 
     if (!book) {
@@ -144,6 +164,56 @@ router.get('/gutenberg/:id/text', async (req, res) => {
   } catch (error) {
     console.error('Get book text error:', error);
     res.status(500).json({ error: 'Failed to get book text' });
+  }
+});
+
+// Get Internet Archive book text content
+router.get('/internetarchive/:id/text', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check cache first
+    const cached = await cache.get<string>(`ia-text-${id}`);
+    if (cached) {
+      return res.json({ content: cached });
+    }
+
+    const text = await internetArchive.getBookText(id);
+
+    if (!text) {
+      return res.status(404).json({ error: 'Book text not found' });
+    }
+
+    // Cache the text
+    await cache.set(`ia-text-${id}`, text, 60 * 60 * 24); // 24 hours
+
+    res.json({ content: text });
+  } catch (error) {
+    console.error('Get IA book text error:', error);
+    res.status(500).json({ error: 'Failed to get book text' });
+  }
+});
+
+// Get Internet Archive book formats (for EPUB URL, etc.)
+router.get('/internetarchive/:id/formats', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check cache first
+    const cached = await cache.get<internetArchive.BookFormats>(`ia-formats-${id}`);
+    if (cached) {
+      return res.json(cached);
+    }
+
+    const formats = await internetArchive.getAvailableFormats(id);
+
+    // Cache the formats
+    await cache.set(`ia-formats-${id}`, formats, 60 * 60 * 24); // 24 hours
+
+    res.json(formats);
+  } catch (error) {
+    console.error('Get IA formats error:', error);
+    res.status(500).json({ error: 'Failed to get book formats' });
   }
 });
 

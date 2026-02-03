@@ -183,7 +183,6 @@ export function SimpleReader({
 
   // Next/prev pages for flip animation
   const nextLeftPage = getPage(currentPage + getPageIncrement());
-  const nextRightPage = isWideScreen ? getPage(currentPage + getPageIncrement() + 1) : null;
   const prevLeftPage = getPage(currentPage - getPageIncrement());
   const prevRightPage = isWideScreen ? getPage(currentPage - getPageIncrement() + 1) : null;
 

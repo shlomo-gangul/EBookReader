@@ -1,5 +1,4 @@
-import { useState, useEffect, useRef, forwardRef } from 'react';
-import HTMLFlipBook from 'react-pageflip';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Home,
   Settings,
@@ -23,34 +22,36 @@ const fontFamilies: Record<FontFamily, { name: string; css: string }> = {
   literata: { name: 'Literata', css: 'Literata, Georgia, serif' },
 };
 
-const modeStyles: Record<ReadingMode, { bg: string; text: string; pageBg: string; pageBgHex: string }> = {
+const modeStyles: Record<ReadingMode, { bg: string; text: string; pageBg: string }> = {
   day: {
-    bg: 'bg-gray-200',
+    bg: 'bg-gray-100',
     text: 'text-gray-900',
     pageBg: 'bg-[#fefce8]',
-    pageBgHex: '#fefce8',
   },
   night: {
     bg: 'bg-slate-950',
     text: 'text-slate-200',
     pageBg: 'bg-[#1e293b]',
-    pageBgHex: '#1e293b',
   },
   sepia: {
     bg: 'bg-amber-100',
     text: 'text-amber-900',
     pageBg: 'bg-[#fef3c7]',
-    pageBgHex: '#fef3c7',
   },
 };
 
-interface FlipBookReaderProps {
+const marginSizes: Record<'small' | 'medium' | 'large', string> = {
+  small: 'px-4 md:px-8',
+  medium: 'px-6 md:px-16',
+  large: 'px-8 md:px-24',
+};
+
+interface ScrollReaderProps {
   pages: PageContent[];
   currentPage: number;
   totalPages: number;
   settings: ReaderSettings;
   bookmarks: BookmarkType[];
-  coverColor?: string; // Color extracted from book cover
   onPageChange: (page: number) => void;
   onSettingsChange: (settings: Partial<ReaderSettings>) => void;
   onAddBookmark: () => void;
@@ -58,125 +59,32 @@ interface FlipBookReaderProps {
   onClose: () => void;
 }
 
-// Page component that forwards ref properly for react-pageflip
-const Page = forwardRef<HTMLDivElement, {
-  page: PageContent;
-  styles: typeof modeStyles.day;
-  contentStyle: React.CSSProperties;
-}>(({ page, styles, contentStyle }, ref) => {
-  // In a book spread: odd pages (1,3,5) are on right, even pages (2,4,6) are on left
-  const isLeftPage = page.pageNumber % 2 === 0;
-
-  // Create illusion of curved page surface:
-  // Left page: spine on RIGHT side
-  // Right page: spine on LEFT side
-  // Near spine: dark shadow -> highlight (page curves up) -> neutral middle
-  const pageGradient = isLeftPage
-    ? `linear-gradient(to right,
-        ${styles.pageBgHex} 0%,
-        ${styles.pageBgHex} 75%,
-        rgba(255,255,255,0.12) 88%,
-        rgba(0,0,0,0.06) 96%,
-        rgba(0,0,0,0.12) 100%
-      )`
-    : `linear-gradient(to left,
-        ${styles.pageBgHex} 0%,
-        ${styles.pageBgHex} 75%,
-        rgba(255,255,255,0.08) 88%,
-        rgba(0,0,0,0.06) 96%,
-        rgba(0,0,0,0.12) 100%
-      )`;
-
-  // Subtle top/bottom shadow for depth
-  const pageShadows = `
-    inset 0 3px 6px -3px rgba(0,0,0,0.08),
-    inset 0 -3px 6px -3px rgba(0,0,0,0.06)
-  `;
-
-  return (
-    <div
-      ref={ref}
-      className="h-full w-full"
-      style={{
-        background: pageGradient,
-        boxShadow: pageShadows,
-      }}
-    >
-      <div
-        className={`h-full w-full px-8 py-6 overflow-auto ${styles.text}`}
-        style={contentStyle}
-      >
-        {page.content ? (
-          <div className="whitespace-pre-wrap">{page.content}</div>
-        ) : (
-          <div className="flex items-center justify-center h-full opacity-50">
-            Page {page.pageNumber}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-});
-
-Page.displayName = 'Page';
-
-export function FlipBookReader({
+export function ScrollReader({
   pages,
   currentPage,
   totalPages,
   settings,
   bookmarks,
-  coverColor = '#8B4513', // Default to a leather brown
   onPageChange,
   onSettingsChange,
   onAddBookmark,
   onRemoveBookmark,
   onClose,
-}: FlipBookReaderProps) {
+}: ScrollReaderProps) {
   const [showSettings, setShowSettings] = useState(false);
   const [showBookmarks, setShowBookmarks] = useState(false);
   const [localFontSize, setLocalFontSize] = useState(settings.fontSize);
-  const [bookSize, setBookSize] = useState({ width: 550, height: 700 });
-  const bookRef = useRef<any>(null);
+  const [showTopBar, setShowTopBar] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
+  const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const lastScrollY = useRef(0);
 
   const styles = modeStyles[settings.mode];
   const progress = totalPages > 0 ? (currentPage / totalPages) * 100 : 0;
   const isBookmarked = bookmarks.some((b) => b.page === currentPage);
 
-  // Calculate book size based on container - height first, then width from book ratio
-  useEffect(() => {
-    const updateSize = () => {
-      if (containerRef.current) {
-        const containerHeight = containerRef.current.clientHeight;
-        const containerWidth = containerRef.current.clientWidth;
-
-        // Standard book page ratio is roughly 6:9 (width:height) or 2:3
-        const bookRatio = 6 / 9; // width = height * 0.667
-
-        // Use 92% of container height
-        let pageHeight = containerHeight * 0.92;
-        let pageWidth = pageHeight * bookRatio;
-
-        // Make sure two pages fit in the width
-        if (pageWidth * 2 > containerWidth * 0.95) {
-          pageWidth = (containerWidth * 0.95) / 2;
-          pageHeight = pageWidth / bookRatio;
-        }
-
-        setBookSize({
-          width: Math.floor(pageWidth),
-          height: Math.floor(pageHeight)
-        });
-      }
-    };
-
-    updateSize();
-    window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
-  }, []);
-
-  // Sync font size
+  // Sync font size with debounce
   useEffect(() => {
     const handler = setTimeout(() => {
       if (localFontSize !== settings.fontSize) {
@@ -190,16 +98,81 @@ export function FlipBookReader({
     setLocalFontSize(settings.fontSize);
   }, [settings.fontSize]);
 
+  // Set up IntersectionObserver to track current page
+  useEffect(() => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        // Find the most visible page
+        let maxRatio = 0;
+        let visiblePage = currentPage;
+
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.intersectionRatio > maxRatio) {
+            maxRatio = entry.intersectionRatio;
+            const pageNum = parseInt(entry.target.getAttribute('data-page') || '1', 10);
+            visiblePage = pageNum;
+          }
+        });
+
+        if (visiblePage !== currentPage && maxRatio > 0.3) {
+          onPageChange(visiblePage);
+        }
+      },
+      {
+        root: containerRef.current,
+        rootMargin: '-20% 0px -20% 0px',
+        threshold: [0, 0.25, 0.5, 0.75, 1],
+      }
+    );
+
+    // Observe all page elements
+    pageRefs.current.forEach((element) => {
+      observerRef.current?.observe(element);
+    });
+
+    return () => {
+      observerRef.current?.disconnect();
+    };
+  }, [pages, currentPage, onPageChange]);
+
+  // Hide/show top bar on scroll
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const currentScrollY = container.scrollTop;
+      const isScrollingDown = currentScrollY > lastScrollY.current;
+
+      if (isScrollingDown && currentScrollY > 100) {
+        setShowTopBar(false);
+      } else if (!isScrollingDown) {
+        setShowTopBar(true);
+      }
+
+      lastScrollY.current = currentScrollY;
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Scroll to page when bookmark is clicked
+  const scrollToPage = useCallback((pageNum: number) => {
+    const element = pageRefs.current.get(pageNum);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, []);
+
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowRight' || e.key === ' ') {
-        e.preventDefault();
-        bookRef.current?.pageFlip()?.flipNext();
-      } else if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        bookRef.current?.pageFlip()?.flipPrev();
-      } else if (e.key === 'Escape') {
+      if (e.key === 'Escape') {
         onClose();
       }
     };
@@ -207,12 +180,6 @@ export function FlipBookReader({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
-
-  // Handle page flip events
-  const onFlip = (e: any) => {
-    const newPage = e.data + 1; // react-pageflip uses 0-indexed
-    onPageChange(newPage);
-  };
 
   const contentStyle: React.CSSProperties = {
     fontSize: `${localFontSize}px`,
@@ -227,9 +194,14 @@ export function FlipBookReader({
   ];
 
   return (
-    <div className={`fixed inset-0 z-50 ${styles.bg} flex flex-col ${settings.mode}-mode`}>
+    <div className={`fixed inset-0 z-50 ${styles.bg} flex flex-col`}>
       {/* Top Bar */}
-      <div className="flex-shrink-0 flex items-center justify-between p-4 bg-black/20">
+      <div
+        className={`flex-shrink-0 flex items-center justify-between p-4 bg-black/20 transition-transform duration-300 ${
+          showTopBar ? 'translate-y-0' : '-translate-y-full'
+        }`}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 60 }}
+      >
         <button
           onClick={onClose}
           className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
@@ -261,143 +233,37 @@ export function FlipBookReader({
         </div>
       </div>
 
-      {/* Book Container */}
+      {/* Scroll Container */}
       <div
         ref={containerRef}
-        className="flex-1 flex items-center justify-center p-4 overflow-hidden relative"
+        className={`flex-1 overflow-y-auto overflow-x-hidden scroll-smooth ${marginSizes[settings.marginSize]}`}
+        style={{
+          paddingTop: showTopBar ? '80px' : '20px',
+          paddingBottom: '100px',
+          WebkitOverflowScrolling: 'touch',
+        }}
       >
-        {/* Outer hardcover - simple book cover */}
-        {pages.length > 0 && bookSize.width > 0 && (
-          <div
-            className="absolute pointer-events-none"
-            style={{
-              width: bookSize.width * 2 + 30,
-              height: bookSize.height + 30,
-              background: coverColor,
-              borderRadius: '3px 8px 8px 3px',
-              boxShadow: '0 20px 50px rgba(0,0,0,0.4), inset 0 0 20px rgba(0,0,0,0.2)',
-              left: '50%',
-              top: '50%',
-              transform: 'translate(-50%, -50%)',
-              zIndex: 1,
-            }}
-          />
-        )}
-        {/* Page edges - cream colored page stack visible around pages */}
-        {pages.length > 0 && bookSize.width > 0 && (
-          <div
-            className="absolute pointer-events-none"
-            style={{
-              width: bookSize.width * 2 + 10,
-              height: bookSize.height + 10,
-              background: '#f5f5f0',
-              borderRadius: '1px',
-              boxShadow: 'inset 0 0 3px rgba(0,0,0,0.1)',
-              left: '50%',
-              top: '50%',
-              transform: 'translate(-50%, -50%)',
-              zIndex: 2,
-            }}
-          />
-        )}
-        {/* Solid page background - prevents transparency during flip */}
-        {pages.length > 0 && bookSize.width > 0 && (
-          <div
-            className="absolute pointer-events-none"
-            style={{
-              width: bookSize.width * 2 + 20,
-              height: bookSize.height + 20,
-              backgroundColor: styles.pageBgHex,
-              left: '50%',
-              top: '50%',
-              transform: 'translate(-50%, -50%)',
-              zIndex: 9,
-            }}
-          />
-        )}
-        {/* Center spine - crease shadow + highlight where pages curve up */}
-        {pages.length > 0 && bookSize.width > 0 && (
-          <>
-            {/* Spine crease - the valley where pages meet */}
+        <div className={`max-w-3xl mx-auto ${styles.pageBg} shadow-lg rounded-lg`}>
+          {pages.map((page) => (
             <div
-              className="absolute pointer-events-none"
-              style={{
-                width: 8,
-                height: bookSize.height,
-                background: 'linear-gradient(to right, transparent, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.3) 60%, transparent)',
-                left: '50%',
-                top: '50%',
-                transform: 'translate(-50%, -50%)',
-                zIndex: 15,
+              key={page.pageNumber}
+              ref={(el) => {
+                if (el) pageRefs.current.set(page.pageNumber, el);
               }}
-            />
-            {/* Left page highlight - catches light as it curves up from spine */}
-            <div
-              className="absolute pointer-events-none"
-              style={{
-                width: 25,
-                height: bookSize.height,
-                background: 'linear-gradient(to left, transparent 0%, rgba(255,255,255,0.18) 60%, transparent 100%)',
-                right: 'calc(50% + 4px)',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                zIndex: 15,
-              }}
-            />
-            {/* Right page highlight - slightly dimmer (less direct light) */}
-            <div
-              className="absolute pointer-events-none"
-              style={{
-                width: 25,
-                height: bookSize.height,
-                background: 'linear-gradient(to right, transparent 0%, rgba(255,255,255,0.1) 60%, transparent 100%)',
-                left: 'calc(50% + 4px)',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                zIndex: 15,
-              }}
-            />
-          </>
-        )}
-        {pages.length > 0 && bookSize.width > 0 && (
-          <HTMLFlipBook
-              ref={bookRef}
-              width={bookSize.width}
-              height={bookSize.height}
-              size="fixed"
-              minWidth={200}
-              maxWidth={1500}
-              minHeight={300}
-              maxHeight={2000}
-              drawShadow={false}
-              flippingTime={300}
-              usePortrait={true}
-              startPage={currentPage - 1}
-              showCover={false}
-              maxShadowOpacity={0.5}
-              mobileScrollSupport={false}
-              clickEventForward={true}
-              useMouseEvents={true}
-              swipeDistance={30}
-              showPageCorners={true}
-              disableFlipByClick={false}
-              onFlip={onFlip}
-              className="shadow-2xl relative z-10"
-              style={{ backgroundColor: styles.pageBgHex }}
-              startZIndex={0}
-              autoSize={true}
-              renderOnlyPageLengthChange={false}
+              data-page={page.pageNumber}
+              className={`py-8 px-6 md:px-12 ${styles.text} border-b border-black/5 last:border-b-0`}
+              style={contentStyle}
             >
-            {pages.map((page) => (
-              <Page
-                key={page.pageNumber}
-                page={page}
-                styles={styles}
-                contentStyle={contentStyle}
-              />
-            ))}
-          </HTMLFlipBook>
-        )}
+              {page.content ? (
+                <div className="whitespace-pre-wrap">{page.content}</div>
+              ) : (
+                <div className="flex items-center justify-center h-32 opacity-50">
+                  Page {page.pageNumber}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Bottom Bar */}
@@ -530,6 +396,27 @@ export function FlipBookReader({
               className="w-full"
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Margin Size
+            </label>
+            <div className="flex gap-2">
+              {(['small', 'medium', 'large'] as const).map((size) => (
+                <button
+                  key={size}
+                  onClick={() => onSettingsChange({ marginSize: size })}
+                  className={`flex-1 py-2 rounded-lg transition-colors capitalize ${
+                    settings.marginSize === size
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  }`}
+                >
+                  {size}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </Modal>
 
@@ -550,7 +437,7 @@ export function FlipBookReader({
               >
                 <button
                   onClick={() => {
-                    bookRef.current?.pageFlip()?.flip(bookmark.page - 1);
+                    scrollToPage(bookmark.page);
                     setShowBookmarks(false);
                   }}
                   className="flex-1 text-left"
