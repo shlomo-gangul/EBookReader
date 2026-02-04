@@ -17,6 +17,7 @@ interface UseBookReaderReturn {
   loadBook: (book: Book) => Promise<void>;
   loadPdfFile: (file: File) => Promise<void>;
   loadEpubFile: (file: File) => Promise<void>;
+  loadEpubFromUrl: (url: string, title: string) => Promise<void>;
 }
 
 export function useBookReader(): UseBookReaderReturn {
@@ -211,6 +212,44 @@ export function useBookReader(): UseBookReaderReturn {
     }
   }, [setCurrentBook, setTotalPages, splitTextIntoPages]);
 
+  const loadEpubFromUrl = useCallback(async (url: string, title: string) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Cleanup previous EPUB
+      if (epubDocRef.current) {
+        epubDocRef.current.destroy();
+      }
+
+      const epub = await loadEpub(url);
+      epubDocRef.current = epub;
+
+      const epubBook: Book = {
+        id: `epub_${Date.now()}`,
+        title: epub.metadata.title || title,
+        authors: epub.metadata.creator ? [{ name: epub.metadata.creator }] : [{ name: 'Unknown' }],
+        source: 'epub',
+        coverUrl: epub.metadata.cover,
+      };
+
+      setCurrentBook(epubBook);
+
+      // Get all chapter content
+      const chapters = await getEpubContent(epub);
+      const content = chapters.join('\n\n');
+      const bookPages = splitTextIntoPages(content);
+
+      setPages(bookPages);
+      setTotalPages(bookPages.length);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load EPUB';
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [setCurrentBook, setTotalPages, splitTextIntoPages]);
+
   const goToPage = useCallback((page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
@@ -237,5 +276,6 @@ export function useBookReader(): UseBookReaderReturn {
     loadBook,
     loadPdfFile,
     loadEpubFile,
+    loadEpubFromUrl,
   };
 }

@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import booksRouter from './routes/books.js';
 import pdfRouter from './routes/pdf.js';
+import ebookRouter from './routes/ebook.js';
 import sessionRouter from './routes/session.js';
 import authRouter from './routes/auth.js';
 import { rateLimiter } from './middleware/rateLimit.js';
@@ -21,6 +22,7 @@ app.use(rateLimiter);
 // Routes
 app.use('/api/books', booksRouter);
 app.use('/api/pdf', pdfRouter);
+app.use('/api/ebook', ebookRouter);
 app.use('/api/session', sessionRouter);
 app.use('/api/auth', authRouter);
 

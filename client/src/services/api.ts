@@ -113,6 +113,42 @@ export const syncProgress = async (progressList: ReadingProgress[]): Promise<voi
   await api.post('/auth/sync', { progress: progressList });
 };
 
+// Ebook Conversion API (MOBI/AZW3 to EPUB)
+export interface EbookConversionResult {
+  sessionId: string;
+  title: string;
+  format: 'mobi' | 'azw3' | 'azw';
+  message: string;
+}
+
+export interface EbookStatus {
+  calibreAvailable: boolean;
+  supportedFormats: string[];
+}
+
+export const checkEbookStatus = async (): Promise<EbookStatus> => {
+  const { data } = await api.get('/ebook/status');
+  return data;
+};
+
+export const convertEbook = async (file: File): Promise<EbookConversionResult> => {
+  const formData = new FormData();
+  formData.append('ebook', file);
+  const { data } = await api.post('/ebook/convert', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 120000, // 2 minutes for conversion
+  });
+  return data;
+};
+
+export const getConvertedEpubUrl = (sessionId: string): string => {
+  return `/api/ebook/${sessionId}/epub`;
+};
+
+export const deleteEbookSession = async (sessionId: string): Promise<void> => {
+  await api.delete(`/ebook/${sessionId}`);
+};
+
 // Set auth token
 export const setAuthToken = (token: string | null) => {
   if (token) {

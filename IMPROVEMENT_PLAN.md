@@ -223,9 +223,14 @@ Your project is a solid full-stack PWA using React + Vite + TypeScript (client) 
 # PRIORITY CHECKLIST
 
 ## PHASE 1: CRITICAL
-- [ ] 1. EPUB support (`epub.js`)
-- [ ] 4. Internet Archive integration
-- [ ] 8. Scroll reading mode
+- [x] 1. EPUB support (`epub.js`) ✅
+- [x] 2. MOBI/AZW3 support (calibre CLI) ✅
+- [x] 4. Internet Archive integration ✅
+- [x] 5. Standard Ebooks - ⚠️ BLOCKED (requires auth/Patrons Circle membership)
+- [x] 6. Feedbooks - ❌ DISCONTINUED (shut down, replaced by Cantook)
+- [x] 7. ManyBooks - ⚠️ BLOCKED (403 on API access)
+- [x] 8. Scroll reading mode ✅
+- [x] 9. Reader mode toggle ✅
 
 ## PHASE 2: HIGH IMPACT - Performance
 - [ ] 10. Debounce resize handler

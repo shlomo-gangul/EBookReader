@@ -11,6 +11,7 @@ import { usePopularBooks } from './hooks/usePopularBooks';
 import { useReadingProgress } from './hooks/useReadingProgress';
 import { useBookStore } from './store';
 import { Spinner } from './components/common';
+import { convertEbook, getConvertedEpubUrl } from './services/api';
 import type { Book } from './types';
 
 // Helper to save/load book from localStorage
@@ -193,7 +194,7 @@ function HomePage() {
 
   const { recentBooks } = useBookStore();
   const { books, isLoading, hasMore, search, loadMore, clearSearch } = useLibrary();
-  const { loadPdfFile, loadEpubFile, isLoading: bookLoading } = useBookReader();
+  const { loadPdfFile, loadEpubFile, loadEpubFromUrl, isLoading: bookLoading } = useBookReader();
   const { genreBooks, isLoading: genresLoading } = usePopularBooks();
 
   const handleBookClick = useCallback((book: Book) => {
@@ -228,6 +229,23 @@ function HomePage() {
     saveBookToStorage(epubBook);
     navigate(`/read/${epubBook.id}`);
   }, [loadEpubFile, navigate]);
+
+  const handleMobiUpload = useCallback(async (file: File) => {
+    // Convert MOBI/AZW3 to EPUB on server, then load
+    const result = await convertEbook(file);
+    const epubUrl = getConvertedEpubUrl(result.sessionId);
+    await loadEpubFromUrl(epubUrl, result.title);
+    setShowUploader(false);
+    // Create a temporary book object
+    const mobiBook: Book = {
+      id: `mobi-${Date.now()}`,
+      title: result.title,
+      authors: [],
+      source: 'epub', // Converted to EPUB
+    };
+    saveBookToStorage(mobiBook);
+    navigate(`/read/${mobiBook.id}`);
+  }, [loadEpubFromUrl, navigate]);
 
   // Show Library (default view)
   return (
@@ -366,7 +384,7 @@ function HomePage() {
                 <X className="w-5 h-5 text-slate-400" />
               </button>
             </div>
-            <PdfUploader onUpload={handlePdfUpload} onEpubUpload={handleEpubUpload} isLoading={bookLoading} />
+            <PdfUploader onUpload={handlePdfUpload} onEpubUpload={handleEpubUpload} onMobiUpload={handleMobiUpload} isLoading={bookLoading} />
           </div>
         </div>
       )}

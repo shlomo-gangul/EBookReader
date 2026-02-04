@@ -5,20 +5,23 @@ import { Button, Spinner } from '../common';
 interface PdfUploaderProps {
   onUpload: (file: File) => Promise<void>;
   onEpubUpload?: (file: File) => Promise<void>;
+  onMobiUpload?: (file: File) => Promise<void>;
   isLoading: boolean;
 }
 
-export function PdfUploader({ onUpload, onEpubUpload, isLoading }: PdfUploaderProps) {
+export function PdfUploader({ onUpload, onEpubUpload, onMobiUpload, isLoading }: PdfUploaderProps) {
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const validateFile = (file: File): boolean => {
-    const isPdf = file.type.includes('pdf') || file.name.toLowerCase().endsWith('.pdf');
-    const isEpub = file.type === 'application/epub+zip' || file.name.toLowerCase().endsWith('.epub');
+    const name = file.name.toLowerCase();
+    const isPdf = file.type.includes('pdf') || name.endsWith('.pdf');
+    const isEpub = file.type === 'application/epub+zip' || name.endsWith('.epub');
+    const isMobi = name.endsWith('.mobi') || name.endsWith('.azw') || name.endsWith('.azw3');
 
-    if (!isPdf && !isEpub) {
-      setError('Please select a PDF or EPUB file');
+    if (!isPdf && !isEpub && !isMobi) {
+      setError('Please select a PDF, EPUB, MOBI, or AZW3 file');
       return false;
     }
     if (file.size > 100 * 1024 * 1024) {
@@ -60,9 +63,14 @@ export function PdfUploader({ onUpload, onEpubUpload, isLoading }: PdfUploaderPr
   const handleUpload = async () => {
     if (selectedFile) {
       try {
-        const isEpub = selectedFile.name.toLowerCase().endsWith('.epub');
+        const name = selectedFile.name.toLowerCase();
+        const isEpub = name.endsWith('.epub');
+        const isMobi = name.endsWith('.mobi') || name.endsWith('.azw') || name.endsWith('.azw3');
+
         if (isEpub && onEpubUpload) {
           await onEpubUpload(selectedFile);
+        } else if (isMobi && onMobiUpload) {
+          await onMobiUpload(selectedFile);
         } else {
           await onUpload(selectedFile);
         }
@@ -126,13 +134,13 @@ export function PdfUploader({ onUpload, onEpubUpload, isLoading }: PdfUploaderPr
                 browse
                 <input
                   type="file"
-                  accept=".pdf,.epub,application/pdf,application/epub+zip"
+                  accept=".pdf,.epub,.mobi,.azw,.azw3,application/pdf,application/epub+zip"
                   onChange={handleFileSelect}
                   className="hidden"
                 />
               </label>
             </p>
-            <p className="text-sm text-slate-500">PDF or EPUB files up to 100MB</p>
+            <p className="text-sm text-slate-500">PDF, EPUB, MOBI, or AZW3 files up to 100MB</p>
           </>
         )}
       </div>
