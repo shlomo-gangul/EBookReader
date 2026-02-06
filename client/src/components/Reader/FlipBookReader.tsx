@@ -13,6 +13,7 @@ import {
   Type,
 } from 'lucide-react';
 import { Modal } from '../common';
+import { hapticPageTurn } from '../../utils/native';
 import type { PageContent, ReadingMode, ReaderSettings, Bookmark as BookmarkType, FontFamily } from '../../types';
 
 // Font family mappings
@@ -261,6 +262,7 @@ export function FlipBookReader({
   const onFlip = (e: any) => {
     const newPage = e.data + 1; // react-pageflip uses 0-indexed
     onPageChange(newPage);
+    hapticPageTurn(); // Tactile feedback on native
   };
 
   const contentStyle: React.CSSProperties = {

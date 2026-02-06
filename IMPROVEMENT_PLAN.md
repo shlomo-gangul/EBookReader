@@ -122,95 +122,144 @@ Your project is a solid full-stack PWA using React + Vite + TypeScript (client) 
 
 ---
 
-# PHASE 3: HIGH IMPACT - Features
+# PHASE 3: MOBILE APP (Capacitor)
 
-## 3.1 MOBILE EXPERIENCE
+## 3.1 CAPACITOR SETUP
 
-| # | Improvement | Technology | Benefit |
-|---|-------------|------------|---------|
-| 39 | **Better swipe gestures** | `@use-gesture/react` | Better swipe detection, pinch-to-zoom |
-| 40 | **Reading view mode** | Fullscreen API + orientation lock | Immersive mobile reading |
-| 41 | **Haptic feedback** | Vibration API on page turn | Tactile experience |
-| 42 | **Touch-optimized UI** | Larger tap targets, bottom nav | Easier one-hand use |
-
----
-
-## 3.2 OFFLINE & SYNC
-
-| # | Improvement | Technology | Benefit |
-|---|-------------|------------|---------|
-| 43 | **Download books for offline** | IndexedDB via `Dexie.js` | Store full books locally |
-| 44 | **Connect existing auth** | Your JWT routes exist but unused | Enable cross-device sync |
-| 45 | **Background sync** | Workbox Background Sync | Queue progress updates when offline |
-| 46 | **Storage management UI** | Show usage, allow clearing books | User control over storage |
+| # | Task | Technology | Benefit |
+|---|------|------------|---------|
+| 39 | **Initialize Capacitor** | `@capacitor/core`, `@capacitor/cli` | Wrap web app in native shell |
+| 40 | **Add Android platform** | `@capacitor/android` | Android app from same codebase |
+| 41 | **Add iOS platform** | `@capacitor/ios` | iOS app from same codebase |
+| 42 | **App icons & splash screens** | `@capacitor/splash-screen` | Professional app appearance |
+| 43 | **Configure app metadata** | `capacitor.config.ts` | App name, ID, permissions |
 
 ---
 
-# PHASE 4: MEDIUM IMPACT - Features
+## 3.2 NATIVE FEATURES
 
-## 4.1 USER EXPERIENCE FEATURES
+| # | Improvement | Technology | Benefit |
+|---|-------------|------------|---------|
+| 44 | **Native file picker** | `@capacitor/filesystem` | Import books from device storage |
+| 45 | **Haptic feedback** | `@capacitor/haptics` | Tactile page turn feedback |
+| 46 | **Status bar control** | `@capacitor/status-bar` | Immersive reading mode |
+| 47 | **Keep screen awake** | `@capacitor-community/keep-awake` | Prevent screen timeout while reading |
+| 48 | **Native share** | `@capacitor/share` | Share book quotes/progress |
+| 49 | **Deep linking** | `@capacitor/app` | Open books via URL scheme |
+
+---
+
+## 3.3 MOBILE UX
+
+| # | Improvement | Technology | Benefit |
+|---|-------------|------------|---------|
+| 50 | **Better swipe gestures** | `@use-gesture/react` | Better swipe detection, pinch-to-zoom |
+| 51 | **Fullscreen reading mode** | Capacitor + Fullscreen API | Hide status/nav bars |
+| 52 | **Orientation lock** | `@capacitor/screen-orientation` | Lock in portrait/landscape |
+| 53 | **Touch-optimized UI** | Larger tap targets, bottom nav | Easier one-hand use |
+| 54 | **Safe area handling** | CSS `env(safe-area-inset-*)` | Support notched devices |
+
+---
+
+## 3.4 OFFLINE & STORAGE
+
+| # | Improvement | Technology | Benefit |
+|---|-------------|------------|---------|
+| 55 | **Download books for offline** | `@capacitor/filesystem` + IndexedDB | Store full books on device |
+| 56 | **Background downloads** | Native background fetch | Download books while app closed |
+| 57 | **Storage management UI** | Show usage, allow clearing books | User control over storage |
+
+---
+
+## 3.5 APP STORE DEPLOYMENT
+
+| # | Task | Details | Platform |
+|---|------|---------|----------|
+| 58 | **Android signing** | Generate keystore, configure Gradle | Android |
+| 59 | **iOS provisioning** | Xcode signing, App Store Connect | iOS |
+| 60 | **Privacy policy** | Required for app stores | Both |
+| 61 | **Store listings** | Screenshots, descriptions, metadata | Both |
+| 62 | **Build & submit** | `npx cap build` + upload | Both |
+
+---
+
+# PHASE 4: FEATURES & SYNC
+
+## 4.1 SYNC & AUTH
+
+| # | Improvement | Technology | Benefit |
+|---|-------------|------------|---------|
+| 63 | **Connect existing auth** | Your JWT routes exist but unused | Enable cross-device sync |
+| 64 | **Cloud progress sync** | Sync reading position across devices | Seamless multi-device reading |
+| 65 | **Background sync** | Workbox Background Sync | Queue progress updates when offline |
+
+---
+
+# PHASE 5: USER EXPERIENCE
+
+## 5.1 READING FEATURES
 
 | # | Feature | Technology | Benefit |
 |---|---------|------------|---------|
-| 47 | **Text-to-Speech (TTS)** | Web Speech API | Accessibility + hands-free reading |
-| 48 | **Highlighting & annotations** | IndexedDB persistence | Select text, add notes |
-| 49 | **Search within book** | Full-text search | Find content quickly |
-| 50 | **Dictionary lookup** | Free Dictionary API | Tap word for definition |
-| 51 | **Night mode auto-switch** | `prefers-color-scheme` | Match system dark mode |
-| 52 | **Collections/shelves** | Local storage / DB | Organize books (Reading, Finished, etc.) |
-| 53 | **Reading statistics** | Track in store | Time spent, pages/day, streaks |
-| 54 | **Reading timer** | setTimeout + notification | Sleep timer, reminders |
+| 66 | **Text-to-Speech (TTS)** | Web Speech API / native TTS | Accessibility + hands-free reading |
+| 67 | **Highlighting & annotations** | IndexedDB / SQLite | Select text, add notes |
+| 68 | **Search within book** | Full-text search | Find content quickly |
+| 69 | **Dictionary lookup** | Free Dictionary API | Tap word for definition |
+| 70 | **Night mode auto-switch** | `prefers-color-scheme` | Match system dark mode |
+| 71 | **Collections/shelves** | Local storage / DB | Organize books (Reading, Finished, etc.) |
+| 72 | **Reading statistics** | Track in store | Time spent, pages/day, streaks |
+| 73 | **Reading timer** | setTimeout + notification | Sleep timer, reminders |
 
 ---
 
-## 4.2 BACKEND IMPROVEMENTS
+## 5.2 BACKEND IMPROVEMENTS
 
 | # | Improvement | Technology | Benefit |
 |---|-------------|------------|---------|
-| 55 | **Add database** | SQLite or PostgreSQL | Persist user data, annotations |
-| 56 | **Image optimization endpoint** | Sharp middleware | Serve WebP/AVIF covers |
-| 57 | **Replace Express** | Fastify or Hono | 2-4x faster, better TypeScript |
-| 58 | **Add tRPC** | `@trpc/server` + `@trpc/react-query` | Type-safe API, no boilerplate |
+| 74 | **Add database** | SQLite or PostgreSQL | Persist user data, annotations |
+| 75 | **Image optimization endpoint** | Sharp middleware | Serve WebP/AVIF covers |
+| 76 | **Replace Express** | Fastify or Hono | 2-4x faster, better TypeScript |
+| 77 | **Add tRPC** | `@trpc/server` + `@trpc/react-query` | Type-safe API, no boilerplate |
 
 ---
 
-## 4.3 ACCESSIBILITY
+## 5.3 ACCESSIBILITY
 
 | # | Improvement | Benefit |
 |---|-------------|---------|
-| 59 | **ARIA labels throughout** | Screen reader support |
-| 60 | **Focus management** | Proper focus trap in modals |
-| 61 | **Skip navigation links** | Quick access for keyboard users |
-| 62 | **High contrast mode** | Vision accessibility |
-| 63 | **Dyslexia-friendly font** | OpenDyslexic font option |
+| 78 | **ARIA labels throughout** | Screen reader support |
+| 79 | **Focus management** | Proper focus trap in modals |
+| 80 | **Skip navigation links** | Quick access for keyboard users |
+| 81 | **High contrast mode** | Vision accessibility |
+| 82 | **Dyslexia-friendly font** | OpenDyslexic font option |
 
 ---
 
-# PHASE 5: NICE TO HAVE
+# PHASE 6: NICE TO HAVE
 
-## 5.1 CODE ARCHITECTURE
+## 6.1 CODE ARCHITECTURE
 
 | # | Improvement | Technology | Benefit |
 |---|-------------|------------|---------|
-| 64 | **React Query** | `@tanstack/react-query` | Caching, deduping, refetch |
-| 65 | **Zod validation** | `zod` | Runtime type safety for API |
-| 66 | **Component library** | Radix UI or Headless UI | Accessible primitives |
-| 67 | **E2E testing** | Playwright | Test real user flows |
-| 68 | **Storybook** | Component docs | Develop UI in isolation |
+| 83 | **React Query** | `@tanstack/react-query` | Caching, deduping, refetch |
+| 84 | **Zod validation** | `zod` | Runtime type safety for API |
+| 85 | **Component library** | Radix UI or Headless UI | Accessible primitives |
+| 86 | **E2E testing** | Playwright | Test real user flows |
+| 87 | **Storybook** | Component docs | Develop UI in isolation |
 
 ---
 
-## 5.2 DEPLOYMENT & INFRASTRUCTURE
+## 6.2 DEPLOYMENT & INFRASTRUCTURE
 
 | # | Improvement | Technology | Benefit |
 |---|-------------|------------|---------|
-| 69 | **Edge deployment** | Cloudflare Workers or Vercel | Faster globally |
-| 70 | **CDN for assets** | Cloudflare R2 or S3 | Fast image/book delivery |
-| 71 | **Monitoring** | Sentry or LogRocket | Error tracking |
+| 88 | **Edge deployment** | Cloudflare Workers or Vercel | Faster globally |
+| 89 | **CDN for assets** | Cloudflare R2 or S3 | Fast image/book delivery |
+| 90 | **Monitoring** | Sentry or LogRocket | Error tracking |
 
 ---
 
-## 5.3 MONETIZATION / SUSTAINABILITY (Optional)
+## 6.3 MONETIZATION / SUSTAINABILITY (Optional)
 
 | # | Approach | How |
 |---|----------|-----|
@@ -244,23 +293,34 @@ Your project is a solid full-stack PWA using React + Vite + TypeScript (client) 
 - [x] 35. Passive touch event listeners ✅
 - [x] 36. `will-change: transform` for animations ✅
 
-## PHASE 3: HIGH IMPACT - Features
-- [ ] 39. Better touch gestures (`@use-gesture/react`)
-- [ ] 43. Offline book downloads (IndexedDB)
-- [ ] 44. Connect existing auth system
+## PHASE 3: MOBILE APP (Capacitor)
+- [x] 39. Initialize Capacitor ✅
+- [x] 40. Add Android platform ✅
+- [ ] 41. Add iOS platform
+- [ ] 42. App icons & splash screens
+- [ ] 44. Native file picker
+- [x] 45. Haptic feedback ✅
+- [ ] 50. Better swipe gestures
+- [ ] 55. Offline book storage
+- [ ] 58-62. App store deployment
 
-## PHASE 4: MEDIUM IMPACT
-- [ ] 47. Text-to-Speech
-- [ ] 48. Highlighting & annotations
-- [ ] 49. Search within book
-- [ ] 55. Add SQLite database
-- [ ] 59-63. Accessibility improvements
+## PHASE 4: FEATURES & SYNC
+- [ ] 63. Connect existing auth system
+- [ ] 64. Cloud progress sync
+- [ ] 65. Background sync
 
-## PHASE 5: NICE TO HAVE
-- [ ] 64. React Query
-- [ ] 52. Collections/shelves
-- [ ] 53. Reading statistics
-- [ ] 67. Playwright tests
+## PHASE 5: USER EXPERIENCE
+- [ ] 66. Text-to-Speech
+- [ ] 67. Highlighting & annotations
+- [ ] 68. Search within book
+- [ ] 74. Add SQLite database
+- [ ] 78-82. Accessibility improvements
+
+## PHASE 6: NICE TO HAVE
+- [ ] 83. React Query
+- [ ] 71. Collections/shelves
+- [ ] 72. Reading statistics
+- [ ] 86. Playwright tests
 
 ---
 

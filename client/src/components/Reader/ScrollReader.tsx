@@ -12,6 +12,7 @@ import {
   Type,
 } from 'lucide-react';
 import { Modal } from '../common';
+import { hapticPageTurn } from '../../utils/native';
 import type { PageContent, ReadingMode, ReaderSettings, Bookmark as BookmarkType, FontFamily } from '../../types';
 
 // Font family mappings
@@ -120,6 +121,7 @@ export function ScrollReader({
 
         if (visiblePage !== currentPage && maxRatio > 0.3) {
           onPageChange(visiblePage);
+          hapticPageTurn(); // Tactile feedback on native
         }
       },
       {
