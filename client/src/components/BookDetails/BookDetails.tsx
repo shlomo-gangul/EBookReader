@@ -104,6 +104,8 @@ export function BookDetails({ book, onBack, onStartReading, onBookClick }: BookD
                   src={book.coverUrl}
                   alt={`Cover of ${book.title}`}
                   className="w-full rounded-lg shadow-2xl"
+                  loading="lazy"
+                  decoding="async"
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = 'none';
                   }}

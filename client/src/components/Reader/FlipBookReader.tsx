@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, forwardRef } from 'react';
+import { useState, useEffect, useRef, forwardRef, memo } from 'react';
 import HTMLFlipBook from 'react-pageflip';
 import {
   Home,
@@ -59,7 +59,8 @@ interface FlipBookReaderProps {
 }
 
 // Page component that forwards ref properly for react-pageflip
-const Page = forwardRef<HTMLDivElement, {
+// Memoized to prevent unnecessary re-renders
+const Page = memo(forwardRef<HTMLDivElement, {
   page: PageContent;
   styles: typeof modeStyles.day;
   contentStyle: React.CSSProperties;
@@ -100,6 +101,7 @@ const Page = forwardRef<HTMLDivElement, {
       style={{
         background: pageGradient,
         boxShadow: pageShadows,
+        willChange: 'transform', // GPU acceleration for flip animation
       }}
     >
       <div
@@ -116,6 +118,15 @@ const Page = forwardRef<HTMLDivElement, {
       </div>
     </div>
   );
+}), (prevProps, nextProps) => {
+  // Custom comparison for memo - only re-render if these change
+  return prevProps.page.pageNumber === nextProps.page.pageNumber &&
+         prevProps.page.content === nextProps.page.content &&
+         prevProps.styles.pageBgHex === nextProps.styles.pageBgHex &&
+         prevProps.styles.text === nextProps.styles.text &&
+         prevProps.contentStyle.fontSize === nextProps.contentStyle.fontSize &&
+         prevProps.contentStyle.fontFamily === nextProps.contentStyle.fontFamily &&
+         prevProps.contentStyle.lineHeight === nextProps.contentStyle.lineHeight;
 });
 
 Page.displayName = 'Page';
@@ -145,7 +156,10 @@ export function FlipBookReader({
   const isBookmarked = bookmarks.some((b) => b.page === currentPage);
 
   // Calculate book size based on container - height first, then width from book ratio
+  // Debounced to prevent excessive re-renders on resize
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+
     const updateSize = () => {
       if (containerRef.current) {
         const containerHeight = containerRef.current.clientHeight;
@@ -171,9 +185,17 @@ export function FlipBookReader({
       }
     };
 
-    updateSize();
-    window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
+    const debouncedUpdate = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(updateSize, 200);
+    };
+
+    updateSize(); // Initial size calculation
+    window.addEventListener('resize', debouncedUpdate);
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', debouncedUpdate);
+    };
   }, []);
 
   // Sync font size

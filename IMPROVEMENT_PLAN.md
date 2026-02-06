@@ -233,16 +233,16 @@ Your project is a solid full-stack PWA using React + Vite + TypeScript (client) 
 - [x] 9. Reader mode toggle ✅
 
 ## PHASE 2: HIGH IMPACT - Performance
-- [ ] 10. Debounce resize handler
-- [ ] 11. Throttle saveProgress
+- [x] 10. Debounce resize handler ✅
+- [x] 11. Throttle saveProgress (5s) ✅
 - [ ] 12. Virtualize page rendering
-- [ ] 15. Add `loading="lazy"` to images
+- [x] 15. Add `loading="lazy"` to images ✅
 - [ ] 21. Virtualize pages (only render visible)
-- [ ] 22. Memoize Page component
+- [x] 22. Memoize Page component ✅
 - [ ] 26. Code splitting with React.lazy
 - [ ] 30. Web Worker for text processing
-- [ ] 35. Passive touch event listeners
-- [ ] 36. `will-change: transform` for animations
+- [x] 35. Passive touch event listeners ✅
+- [x] 36. `will-change: transform` for animations ✅
 
 ## PHASE 3: HIGH IMPACT - Features
 - [ ] 39. Better touch gestures (`@use-gesture/react`)

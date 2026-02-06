@@ -2,6 +2,10 @@ import { create } from 'zustand';
 import type { Book, ReadingProgress, ReaderSettings, Bookmark, User } from '../types';
 import * as cacheService from '../services/cacheService';
 
+// Throttle helper for saveProgress - only save every 5 seconds
+let lastSaveTime = 0;
+const SAVE_THROTTLE_MS = 5000;
+
 interface BookStore {
   // Current book state
   currentBook: Book | null;
@@ -74,7 +78,12 @@ export const useBookStore = create<BookStore>((set, get) => ({
 
   setCurrentPage: (page) => {
     set({ currentPage: page });
-    get().saveProgress();
+    // Throttle saveProgress to avoid excessive writes
+    const now = Date.now();
+    if (now - lastSaveTime > SAVE_THROTTLE_MS) {
+      lastSaveTime = now;
+      get().saveProgress();
+    }
   },
 
   setTotalPages: (total) => set({ totalPages: total }),
