@@ -235,9 +235,9 @@ Your project is a solid full-stack PWA using React + Vite + TypeScript (client) 
 ## PHASE 2: HIGH IMPACT - Performance
 - [x] 10. Debounce resize handler ✅
 - [x] 11. Throttle saveProgress (5s) ✅
-- [ ] 12. Virtualize page rendering
+- [x] 12. Virtualize page rendering ✅
 - [x] 15. Add `loading="lazy"` to images ✅
-- [ ] 21. Virtualize pages (only render visible)
+- [x] 21. Virtualize pages (only render visible) ✅
 - [x] 22. Memoize Page component ✅
 - [ ] 26. Code splitting with React.lazy
 - [ ] 30. Web Worker for text processing
