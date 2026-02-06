@@ -3,6 +3,7 @@ import { useBookStore } from '../store';
 import { getBookContent, getGutenbergText, getInternetArchiveText, getInternetArchiveFormats } from '../services/api';
 import { loadPdf, type PdfDocument } from '../services/pdfService';
 import { loadEpub, loadEpubFromFile, getEpubContent, type EpubDocument } from '../services/epubService';
+import { splitTextIntoPages } from '../utils/textProcessorWorker';
 import type { Book, PageContent } from '../types';
 
 interface UseBookReaderReturn {
@@ -45,36 +46,6 @@ export function useBookReader(): UseBookReaderReturn {
         epubDocRef.current.destroy();
       }
     };
-  }, []);
-
-  const splitTextIntoPages = useCallback((text: string, charsPerPage = 2000): PageContent[] => {
-    // Normalize line endings and split by double newlines
-    const normalizedText = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-    const paragraphs = normalizedText.split(/\n\n+/);
-    const pageContents: PageContent[] = [];
-    let currentContent = '';
-    let pageNumber = 1;
-
-    for (const paragraph of paragraphs) {
-      if (currentContent.length + paragraph.length > charsPerPage && currentContent.length > 0) {
-        pageContents.push({
-          pageNumber: pageNumber++,
-          content: currentContent.trim(),
-        });
-        currentContent = paragraph;
-      } else {
-        currentContent += (currentContent ? '\n\n' : '') + paragraph;
-      }
-    }
-
-    if (currentContent.trim()) {
-      pageContents.push({
-        pageNumber: pageNumber,
-        content: currentContent.trim(),
-      });
-    }
-
-    return pageContents;
   }, []);
 
   const loadBook = useCallback(async (book: Book) => {
@@ -123,7 +94,7 @@ export function useBookReader(): UseBookReaderReturn {
         throw new Error('Unsupported book source');
       }
 
-      const bookPages = splitTextIntoPages(content);
+      const bookPages = await splitTextIntoPages(content);
       setPages(bookPages);
       setTotalPages(bookPages.length);
     } catch (err) {
@@ -132,7 +103,7 @@ export function useBookReader(): UseBookReaderReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [setCurrentBook, setTotalPages, splitTextIntoPages]);
+  }, [setCurrentBook, setTotalPages]);
 
   const loadPdfFile = useCallback(async (file: File) => {
     setIsLoading(true);
@@ -200,7 +171,7 @@ export function useBookReader(): UseBookReaderReturn {
       // Get all chapter content
       const chapters = await getEpubContent(epub);
       const content = chapters.join('\n\n');
-      const bookPages = splitTextIntoPages(content);
+      const bookPages = await splitTextIntoPages(content);
 
       setPages(bookPages);
       setTotalPages(bookPages.length);
@@ -210,7 +181,7 @@ export function useBookReader(): UseBookReaderReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [setCurrentBook, setTotalPages, splitTextIntoPages]);
+  }, [setCurrentBook, setTotalPages]);
 
   const loadEpubFromUrl = useCallback(async (url: string, title: string) => {
     setIsLoading(true);
@@ -238,7 +209,7 @@ export function useBookReader(): UseBookReaderReturn {
       // Get all chapter content
       const chapters = await getEpubContent(epub);
       const content = chapters.join('\n\n');
-      const bookPages = splitTextIntoPages(content);
+      const bookPages = await splitTextIntoPages(content);
 
       setPages(bookPages);
       setTotalPages(bookPages.length);
@@ -248,7 +219,7 @@ export function useBookReader(): UseBookReaderReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [setCurrentBook, setTotalPages, splitTextIntoPages]);
+  }, [setCurrentBook, setTotalPages]);
 
   const goToPage = useCallback((page: number) => {
     if (page >= 1 && page <= totalPages) {

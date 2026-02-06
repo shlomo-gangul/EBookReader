@@ -1,10 +1,13 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, useNavigate, useParams } from 'react-router-dom';
 import { BookOpen, Upload, Library, Menu, X, TrendingUp, BookText, ScrollText } from 'lucide-react';
 import { SearchBar, BookGrid, BookCard } from './components/Library';
-import { FlipBookReader, ScrollReader } from './components/Reader';
-import { BookDetails } from './components/BookDetails';
 import { PdfUploader } from './components/Upload';
+
+// Lazy load heavy components for code splitting
+const FlipBookReader = lazy(() => import('./components/Reader/FlipBookReader').then(m => ({ default: m.FlipBookReader })));
+const ScrollReader = lazy(() => import('./components/Reader/ScrollReader').then(m => ({ default: m.ScrollReader })));
+const BookDetails = lazy(() => import('./components/BookDetails/BookDetails').then(m => ({ default: m.BookDetails })));
 import { useLibrary } from './hooks/useLibrary';
 import { useBookReader } from './hooks/useBookReader';
 import { usePopularBooks } from './hooks/usePopularBooks';
@@ -127,18 +130,27 @@ function ReaderPage() {
         )}
       </button>
 
-      <ReaderComponent
-        pages={pages}
-        currentPage={currentPage}
-        totalPages={pages.length}
-        settings={settings}
-        bookmarks={bookmarks}
-        onPageChange={setCurrentPage}
-        onSettingsChange={updateSettings}
-        onAddBookmark={() => addBookmark()}
-        onRemoveBookmark={removeBookmark}
-        onClose={handleClose}
-      />
+      <Suspense fallback={
+        <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+          <div className="text-center">
+            <Spinner size="lg" />
+            <p className="mt-4 text-slate-400">Loading reader...</p>
+          </div>
+        </div>
+      }>
+        <ReaderComponent
+          pages={pages}
+          currentPage={currentPage}
+          totalPages={pages.length}
+          settings={settings}
+          bookmarks={bookmarks}
+          onPageChange={setCurrentPage}
+          onSettingsChange={updateSettings}
+          onAddBookmark={() => addBookmark()}
+          onRemoveBookmark={removeBookmark}
+          onClose={handleClose}
+        />
+      </Suspense>
     </>
   );
 }
@@ -178,12 +190,18 @@ function BookDetailsPage() {
   }
 
   return (
-    <BookDetails
-      book={book}
-      onBack={() => navigate('/')}
-      onStartReading={handleStartReading}
-      onBookClick={handleBookClick}
-    />
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <Spinner size="lg" />
+      </div>
+    }>
+      <BookDetails
+        book={book}
+        onBack={() => navigate('/')}
+        onStartReading={handleStartReading}
+        onBookClick={handleBookClick}
+      />
+    </Suspense>
   );
 }
 

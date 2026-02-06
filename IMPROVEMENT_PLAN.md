@@ -239,8 +239,8 @@ Your project is a solid full-stack PWA using React + Vite + TypeScript (client) 
 - [x] 15. Add `loading="lazy"` to images ✅
 - [x] 21. Virtualize pages (only render visible) ✅
 - [x] 22. Memoize Page component ✅
-- [ ] 26. Code splitting with React.lazy
-- [ ] 30. Web Worker for text processing
+- [x] 26. Code splitting with React.lazy ✅
+- [x] 30. Web Worker for text processing ✅
 - [x] 35. Passive touch event listeners ✅
 - [x] 36. `will-change: transform` for animations ✅
 
