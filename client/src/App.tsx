@@ -7,6 +7,7 @@ import { PdfUploader } from './components/Upload';
 // Lazy load heavy components for code splitting
 const FlipBookReader = lazy(() => import('./components/Reader/FlipBookReader').then(m => ({ default: m.FlipBookReader })));
 const ScrollReader = lazy(() => import('./components/Reader/ScrollReader').then(m => ({ default: m.ScrollReader })));
+const SimpleReader = lazy(() => import('./components/Reader/SimpleReader').then(m => ({ default: m.SimpleReader })));
 const BookDetails = lazy(() => import('./components/BookDetails/BookDetails').then(m => ({ default: m.BookDetails })));
 import { useLibrary } from './hooks/useLibrary';
 import { useBookReader } from './hooks/useBookReader';
@@ -41,6 +42,18 @@ function ReaderPage() {
   const { loadBook, pages, isLoading: bookLoading, error } = useBookReader();
   const { bookmarks, addBookmark, removeBookmark } = useReadingProgress();
   const [initialized, setInitialized] = useState(false);
+  const [isNarrowScreen, setIsNarrowScreen] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsNarrowScreen(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const handleToggleReaderMode = useCallback(() => {
+    const newMode = settings.readerMode === 'flip' ? 'scroll' : 'flip';
+    updateSettings({ readerMode: newMode });
+  }, [settings.readerMode, updateSettings]);
 
   useEffect(() => {
     const initReader = async () => {
@@ -107,13 +120,14 @@ function ReaderPage() {
     );
   }
 
-  const handleToggleReaderMode = useCallback(() => {
-    const newMode = settings.readerMode === 'flip' ? 'scroll' : 'flip';
-    updateSettings({ readerMode: newMode });
-  }, [settings.readerMode, updateSettings]);
-
-  // Render the appropriate reader based on settings
-  const ReaderComponent = settings.readerMode === 'scroll' ? ScrollReader : FlipBookReader;
+  // Render the appropriate reader based on screen size and settings
+  // On phones: SimpleReader (single-page with touch nav) or ScrollReader
+  // On desktop/tablet: FlipBookReader or ScrollReader
+  const ReaderComponent = settings.readerMode === 'scroll'
+    ? ScrollReader
+    : isNarrowScreen
+      ? SimpleReader
+      : FlipBookReader;
 
   return (
     <>

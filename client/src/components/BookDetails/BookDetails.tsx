@@ -11,7 +11,7 @@ import {
 import { BookCard } from '../Library/BookCard';
 import { Spinner } from '../common';
 import type { Book } from '../../types';
-import axios from 'axios';
+import { searchBooks } from '../../services/api';
 
 interface BookDetailsProps {
   book: Book;
@@ -28,32 +28,13 @@ export function BookDetails({ book, onBack, onStartReading, onBookClick }: BookD
     const fetchRelatedBooks = async () => {
       setIsLoadingRelated(true);
       try {
-        // Get related books from the same genre/subject
+        // Get related books from the same genre/subject via backend proxy
         const subject = book.subjects?.[0] || 'fiction';
-        const response = await axios.get(
-          `https://gutendex.com/books?topic=${encodeURIComponent(subject)}`,
-          { timeout: 10000 }
-        );
+        const result = await searchBooks(subject, 1);
 
-        const books: Book[] = response.data.results
-          .filter((b: { id: number }) => b.id.toString() !== book.id)
-          .slice(0, 6)
-          .map((b: {
-            id: number;
-            title: string;
-            authors: { name: string }[];
-            subjects: string[];
-            languages: string[];
-            formats: Record<string, string>;
-          }) => ({
-            id: b.id.toString(),
-            title: b.title,
-            authors: b.authors.map((a) => ({ name: a.name })),
-            coverUrl: `https://www.gutenberg.org/cache/epub/${b.id}/pg${b.id}.cover.medium.jpg`,
-            subjects: b.subjects?.slice(0, 3),
-            language: b.languages?.[0],
-            source: 'gutenberg' as const,
-          }));
+        const books: Book[] = result.books
+          .filter((b) => b.id !== book.id)
+          .slice(0, 6);
 
         setRelatedBooks(books);
       } catch (error) {

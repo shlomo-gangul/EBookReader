@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -119,6 +119,10 @@ export function SimpleReader({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Touch swipe navigation
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const contentAreaRef = useRef<HTMLDivElement>(null);
+
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -170,6 +174,40 @@ export function SimpleReader({
       setFlipDirection(null);
     }, 500);
   }, [currentPage, isWideScreen, onPageChange, isFlipping]);
+
+  // Touch swipe effect
+  useEffect(() => {
+    const el = contentAreaRef.current;
+    if (!el) return;
+
+    const onTouchStart = (e: TouchEvent) => {
+      touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (!touchStartRef.current) return;
+      const dx = e.changedTouches[0].clientX - touchStartRef.current.x;
+      const dy = e.changedTouches[0].clientY - touchStartRef.current.y;
+      const absDx = Math.abs(dx);
+      const absDy = Math.abs(dy);
+      touchStartRef.current = null;
+
+      if (absDx > 50 && absDx > absDy * 1.5) {
+        if (dx < 0) {
+          handleNext();
+        } else {
+          handlePrev();
+        }
+      }
+    };
+
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchend', onTouchEnd, { passive: true });
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [handleNext, handlePrev]);
 
   // Get page content by index
   const getPage = (pageNum: number): PageContent | null => {
@@ -253,7 +291,7 @@ export function SimpleReader({
       </div>
 
       {/* Content Area - Book */}
-      <div className="flex-1 flex items-stretch px-4 md:px-8 py-4 overflow-hidden relative book-container">
+      <div ref={contentAreaRef} className="flex-1 flex items-stretch px-4 md:px-8 py-4 overflow-hidden relative book-container">
         <div className={`book-pages h-full w-full relative ${!isWideScreen ? 'single-page-mode' : ''}`}>
 
           {/* Two-page mode */}

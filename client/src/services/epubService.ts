@@ -31,10 +31,15 @@ export interface EpubChapter {
 }
 
 /**
- * Load an EPUB from a URL
+ * Load an EPUB from a URL by fetching it as binary data first
  */
 export async function loadEpub(url: string): Promise<EpubDocument> {
-  const book = ePub(url);
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch EPUB: ${response.status}`);
+  }
+  const arrayBuffer = await response.arrayBuffer();
+  const book = ePub(arrayBuffer);
   await book.ready;
 
   const metadata = await extractMetadata(book);

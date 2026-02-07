@@ -59,33 +59,6 @@ interface FlipBookReaderProps {
   onClose: () => void;
 }
 
-// Number of pages to render before/after current page
-const PAGE_BUFFER = 3;
-
-// Lightweight placeholder for pages outside the buffer
-// Still needs ref forwarding for react-pageflip
-const PlaceholderPage = memo(forwardRef<HTMLDivElement, {
-  pageNumber: number;
-  styles: typeof modeStyles.day;
-}>(({ pageNumber, styles }, ref) => {
-  return (
-    <div
-      ref={ref}
-      className="h-full w-full"
-      style={{
-        backgroundColor: styles.pageBgHex,
-        willChange: 'transform',
-      }}
-    >
-      <div className="flex items-center justify-center h-full opacity-30">
-        <span className="text-sm">Page {pageNumber}</span>
-      </div>
-    </div>
-  );
-}));
-
-PlaceholderPage.displayName = 'PlaceholderPage';
-
 // Page component that forwards ref properly for react-pageflip
 // Memoized to prevent unnecessary re-renders
 const Page = memo(forwardRef<HTMLDivElement, {
@@ -439,30 +412,14 @@ export function FlipBookReader({
               autoSize={true}
               renderOnlyPageLengthChange={false}
             >
-            {pages.map((page) => {
-              // Only render full content for pages within buffer range
-              const isInBuffer = Math.abs(page.pageNumber - currentPage) <= PAGE_BUFFER;
-
-              if (isInBuffer) {
-                return (
-                  <Page
-                    key={page.pageNumber}
-                    page={page}
-                    styles={styles}
-                    contentStyle={contentStyle}
-                  />
-                );
-              }
-
-              // Render lightweight placeholder for distant pages
-              return (
-                <PlaceholderPage
-                  key={page.pageNumber}
-                  pageNumber={page.pageNumber}
-                  styles={styles}
-                />
-              );
-            })}
+            {pages.map((page) => (
+              <Page
+                key={page.pageNumber}
+                page={page}
+                styles={styles}
+                contentStyle={contentStyle}
+              />
+            ))}
           </HTMLFlipBook>
         )}
       </div>

@@ -7,8 +7,9 @@ const config: CapacitorConfig = {
 
   // Server configuration
   server: {
-    // Allow loading from localhost during development
     androidScheme: 'https',
+    // Point to host machine's Vite dev server (10.0.2.2 = host localhost in Android emulator)
+    url: 'http://10.0.2.2:3000',
   },
 
   // Plugins configuration

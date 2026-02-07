@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import axios from 'axios';
 import * as openLibrary from '../services/openLibrary.js';
 import * as gutenberg from '../services/gutenberg.js';
 import * as internetArchive from '../services/internetArchive.js';
@@ -214,6 +215,38 @@ router.get('/internetarchive/:id/formats', async (req, res) => {
   } catch (error) {
     console.error('Get IA formats error:', error);
     res.status(500).json({ error: 'Failed to get book formats' });
+  }
+});
+
+// Proxy EPUB download to avoid CORS issues
+router.get('/gutenberg/:id/epub', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const book = await gutenberg.getBook(id);
+
+    if (!book) {
+      return res.status(404).json({ error: 'Book not found' });
+    }
+
+    const epubUrl = book.formats['application/epub+zip'];
+    if (!epubUrl) {
+      return res.status(404).json({ error: 'EPUB format not available' });
+    }
+
+    const response = await axios.get(epubUrl, {
+      responseType: 'arraybuffer',
+      timeout: 60000,
+    });
+
+    res.set({
+      'Content-Type': 'application/epub+zip',
+      'Content-Disposition': `inline; filename="${id}.epub"`,
+      'Cache-Control': 'public, max-age=86400',
+    });
+    res.send(response.data);
+  } catch (error) {
+    console.error('EPUB proxy error:', error);
+    res.status(500).json({ error: 'Failed to fetch EPUB' });
   }
 });
 

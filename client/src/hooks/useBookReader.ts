@@ -60,7 +60,8 @@ export function useBookReader(): UseBookReaderReturn {
         // Check if EPUB is available and preferred
         if (book.formats?.epub) {
           try {
-            const epub = await loadEpub(book.formats.epub);
+            // Use backend proxy to avoid CORS issues with gutenberg.org
+            const epub = await loadEpub(`/api/books/gutenberg/${book.id}/epub`);
             epubDocRef.current = epub;
             const chapters = await getEpubContent(epub);
             content = chapters.join('\n\n');
