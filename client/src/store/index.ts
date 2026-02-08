@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import type { Book, ReadingProgress, ReaderSettings, Bookmark, User } from '../types';
 import * as cacheService from '../services/cacheService';
+import * as api from '../services/api';
+import * as syncService from '../services/syncService';
 
 // Throttle helper for saveProgress - only save every 5 seconds
 let lastSaveTime = 0;
@@ -24,6 +26,10 @@ interface BookStore {
   user: User | null;
   isAuthenticated: boolean;
 
+  // Auth UI state
+  showAuthModal: boolean;
+  setShowAuthModal: (show: boolean) => void;
+
   // Library state
   searchQuery: string;
   searchResults: Book[];
@@ -44,6 +50,12 @@ interface BookStore {
   addToRecentBooks: (book: Book) => void;
   loadFromCache: () => void;
   saveProgress: () => void;
+
+  // Auth actions
+  login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, name?: string) => Promise<void>;
+  logout: () => void;
+  restoreSession: () => Promise<void>;
 }
 
 export const useBookStore = create<BookStore>((set, get) => ({
@@ -57,9 +69,12 @@ export const useBookStore = create<BookStore>((set, get) => ({
   bookmarks: [],
   user: null,
   isAuthenticated: false,
+  showAuthModal: false,
   searchQuery: '',
   searchResults: [],
   recentBooks: cacheService.getRecentBooks().map((r) => r.book),
+
+  setShowAuthModal: (show) => set({ showAuthModal: show }),
 
   // Actions
   setCurrentBook: (book) => {
@@ -138,7 +153,7 @@ export const useBookStore = create<BookStore>((set, get) => ({
   },
 
   saveProgress: () => {
-    const { currentBook, currentPage, totalPages, bookmarks } = get();
+    const { currentBook, currentPage, totalPages, bookmarks, isAuthenticated } = get();
     if (currentBook && totalPages > 0) {
       const progress: ReadingProgress = {
         bookId: currentBook.id,
@@ -149,6 +164,79 @@ export const useBookStore = create<BookStore>((set, get) => ({
         bookmarks,
       };
       cacheService.saveReadingProgress(currentBook.id, progress);
+
+      // If authenticated, also push to cloud (throttled)
+      if (isAuthenticated) {
+        syncService.pushSingleProgress(progress).catch(() => {
+          // Silently fail — background sync will retry
+        });
+      }
+    }
+  },
+
+  // Auth actions
+  login: async (email, password) => {
+    const data = await api.login(email, password);
+    cacheService.saveAuthToken(data.token);
+    api.setAuthToken(data.token);
+
+    // Fetch user info
+    const user = await api.getCurrentUser();
+    set({ user, isAuthenticated: true, showAuthModal: false });
+
+    // Bidirectional sync
+    try {
+      await syncService.pullAndMergeProgress();
+      await syncService.pushAllProgress();
+      // Refresh recentBooks from merged local data
+      const recentBooks = cacheService.getRecentBooks().map((r) => r.book);
+      set({ recentBooks });
+    } catch {
+      // Sync failure is non-fatal
+    }
+  },
+
+  register: async (email, password, name?) => {
+    const data = await api.register(email, password, name);
+    cacheService.saveAuthToken(data.token);
+    api.setAuthToken(data.token);
+
+    // Fetch user info
+    const user = await api.getCurrentUser();
+    set({ user, isAuthenticated: true, showAuthModal: false });
+
+    // Push existing local progress to cloud
+    try {
+      await syncService.pushAllProgress();
+    } catch {
+      // Non-fatal
+    }
+  },
+
+  logout: () => {
+    cacheService.clearAuthToken();
+    api.setAuthToken(null);
+    set({ user: null, isAuthenticated: false });
+  },
+
+  restoreSession: async () => {
+    const token = cacheService.getAuthToken();
+    if (!token) return;
+
+    api.setAuthToken(token);
+    try {
+      const user = await api.getCurrentUser();
+      set({ user, isAuthenticated: true });
+
+      // Background sync
+      syncService.pullAndMergeProgress().then(() => {
+        const recentBooks = cacheService.getRecentBooks().map((r) => r.book);
+        set({ recentBooks });
+      }).catch(() => {});
+    } catch {
+      // Token expired or invalid
+      cacheService.clearAuthToken();
+      api.setAuthToken(null);
     }
   },
 }));

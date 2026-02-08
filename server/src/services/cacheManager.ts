@@ -148,6 +148,37 @@ setInterval(() => {
   }
 }, 60 * 1000); // Every minute
 
+export async function getByPattern<T>(pattern: string): Promise<Record<string, T>> {
+  const results: Record<string, T> = {};
+
+  if (isConnected && client) {
+    try {
+      const keys: string[] = [];
+      for await (const key of client.scanIterator({ MATCH: pattern, COUNT: 100 })) {
+        keys.push(key);
+      }
+      for (const key of keys) {
+        const data = await client.get(key);
+        if (data) {
+          results[key] = JSON.parse(data);
+        }
+      }
+      return results;
+    } catch {
+      // Fallback to memory cache
+    }
+  }
+
+  const now = Date.now();
+  const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
+  for (const [key, value] of memoryCache.entries()) {
+    if (regex.test(key) && value.expiry > now) {
+      results[key] = JSON.parse(value.data);
+    }
+  }
+  return results;
+}
+
 export const CACHE_KEYS = {
   BOOK: (id: string) => `book:${id}`,
   SEARCH: (query: string) => `search:${query.toLowerCase().trim()}`,

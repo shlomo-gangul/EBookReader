@@ -3,6 +3,7 @@ import { Routes, Route, useNavigate, useParams } from 'react-router-dom';
 import { BookOpen, Upload, Library, Menu, X, TrendingUp, BookText, ScrollText, WifiOff, Trash2, HardDrive } from 'lucide-react';
 import { SearchBar, BookGrid, BookCard } from './components/Library';
 import { PdfUploader } from './components/Upload';
+import { AuthModal, UserMenu } from './components/Auth';
 import { useOfflineBooks } from './hooks/useOfflineBooks';
 
 // Lazy load heavy components for code splitting
@@ -225,11 +226,15 @@ function HomePage() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showUploader, setShowUploader] = useState(false);
 
-  const { recentBooks } = useBookStore();
+  const { recentBooks, restoreSession } = useBookStore();
   const { books, isLoading, hasMore, search, loadMore, clearSearch } = useLibrary();
   const { loadPdfFile, loadEpubFile, loadEpubFromUrl, isLoading: bookLoading } = useBookReader();
   const { genreBooks, isLoading: genresLoading } = usePopularBooks();
   const { offlineBooks, storageUsed, removeBook: removeOfflineBook } = useOfflineBooks();
+
+  useEffect(() => {
+    restoreSession();
+  }, [restoreSession]);
 
   const handleBookClick = useCallback((book: Book) => {
     saveBookToStorage(book);
@@ -302,6 +307,7 @@ function HomePage() {
                 <Upload className="w-5 h-5" />
                 Upload Book
               </button>
+              <UserMenu />
             </nav>
 
             {/* Mobile Menu Button */}
@@ -315,7 +321,7 @@ function HomePage() {
 
           {/* Mobile Menu */}
           {showMobileMenu && (
-            <nav className="md:hidden mt-4 pb-2 border-t border-slate-800 pt-4">
+            <nav className="md:hidden mt-4 pb-2 border-t border-slate-800 pt-4 space-y-1">
               <button
                 onClick={() => {
                   setShowUploader(true);
@@ -326,6 +332,7 @@ function HomePage() {
                 <Upload className="w-5 h-5" />
                 Upload Book
               </button>
+              <UserMenu />
             </nav>
           )}
         </div>
@@ -493,6 +500,9 @@ function HomePage() {
           </p>
         </div>
       </footer>
+
+      {/* Auth Modal */}
+      <AuthModal />
     </div>
   );
 }

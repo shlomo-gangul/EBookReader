@@ -77,6 +77,19 @@ export default defineConfig({
                 maxAgeSeconds: 60 * 60 * 24
               }
             }
+          },
+          {
+            urlPattern: /\/api\/auth\/sync$/,
+            handler: 'NetworkOnly',
+            method: 'POST',
+            options: {
+              backgroundSync: {
+                name: 'progress-sync-queue',
+                options: {
+                  maxRetentionTime: 24 * 60 // 24 hours in minutes
+                }
+              }
+            }
           }
         ]
       }

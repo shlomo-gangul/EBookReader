@@ -113,6 +113,11 @@ export const syncProgress = async (progressList: ReadingProgress[]): Promise<voi
   await api.post('/auth/sync', { progress: progressList });
 };
 
+export const getCloudProgress = async (): Promise<ReadingProgress[]> => {
+  const { data } = await api.get('/auth/progress');
+  return data.progress;
+};
+
 // Ebook Conversion API (MOBI/AZW3 to EPUB)
 export interface EbookConversionResult {
   sessionId: string;

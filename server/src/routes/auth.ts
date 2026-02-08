@@ -161,6 +161,33 @@ router.get('/me', async (req, res) => {
   }
 });
 
+// Get all reading progress for authenticated user
+router.get('/progress', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const token = authHeader.substring(7);
+
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+      const entries = await cache.getByPattern<ReadingProgress>(
+        `user:${decoded.userId}:progress:*`
+      );
+
+      const progress = Object.values(entries);
+      res.json({ progress });
+    } catch {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+  } catch (error) {
+    console.error('Get progress error:', error);
+    res.status(500).json({ error: 'Failed to get progress' });
+  }
+});
+
 // Sync reading progress from client
 router.post('/sync', async (req, res) => {
   try {

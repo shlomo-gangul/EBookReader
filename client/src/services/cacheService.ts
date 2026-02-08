@@ -4,6 +4,7 @@ const SETTINGS_KEY = `${CACHE_PREFIX}settings`;
 const SESSION_KEY = `${CACHE_PREFIX}session`;
 const BOOKMARKS_KEY = `${CACHE_PREFIX}bookmarks_`;
 const RECENT_BOOKS_KEY = `${CACHE_PREFIX}recent_books`;
+const AUTH_TOKEN_KEY = `${CACHE_PREFIX}auth_token`;
 
 import type { ReadingProgress, ReaderSettings, Bookmark, Book } from '../types';
 
@@ -142,6 +143,19 @@ export function addToRecentBooks(book: Book): void {
 export function getRecentBooks(): RecentBook[] {
   const data = localStorage.getItem(RECENT_BOOKS_KEY);
   return data ? JSON.parse(data) : [];
+}
+
+// Auth Token
+export function saveAuthToken(token: string): void {
+  localStorage.setItem(AUTH_TOKEN_KEY, token);
+}
+
+export function getAuthToken(): string | null {
+  return localStorage.getItem(AUTH_TOKEN_KEY);
+}
+
+export function clearAuthToken(): void {
+  localStorage.removeItem(AUTH_TOKEN_KEY);
 }
 
 // Clear all cache
