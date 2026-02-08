@@ -6,12 +6,18 @@ import {
   Tag,
   ExternalLink,
   ArrowLeft,
-  Play
+  Play,
+  Download,
+  CheckCircle,
+  Loader2,
+  Trash2,
 } from 'lucide-react';
 import { BookCard } from '../Library/BookCard';
 import { Spinner } from '../common';
 import type { Book } from '../../types';
 import { searchBooks } from '../../services/api';
+import { isBookOffline } from '../../services/offlineStorage';
+import { useOfflineBooks } from '../../hooks/useOfflineBooks';
 
 interface BookDetailsProps {
   book: Book;
@@ -23,6 +29,25 @@ interface BookDetailsProps {
 export function BookDetails({ book, onBack, onStartReading, onBookClick }: BookDetailsProps) {
   const [relatedBooks, setRelatedBooks] = useState<Book[]>([]);
   const [isLoadingRelated, setIsLoadingRelated] = useState(true);
+  const [offlineStatus, setOfflineStatus] = useState<'none' | 'available'>('none');
+  const { downloadBook, isDownloading, removeBook } = useOfflineBooks();
+
+  // Check offline status on mount
+  useEffect(() => {
+    isBookOffline(book.id).then((offline) => {
+      setOfflineStatus(offline ? 'available' : 'none');
+    });
+  }, [book.id]);
+
+  const handleDownloadOffline = async () => {
+    await downloadBook(book);
+    setOfflineStatus('available');
+  };
+
+  const handleRemoveOffline = async () => {
+    await removeBook(book.id);
+    setOfflineStatus('none');
+  };
 
   useEffect(() => {
     const fetchRelatedBooks = async () => {
@@ -166,14 +191,51 @@ export function BookDetails({ book, onBack, onStartReading, onBookClick }: BookD
               </div>
             )}
 
-            {/* Start Reading Button */}
-            <button
-              onClick={onStartReading}
-              className="inline-flex items-center gap-2 px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white text-lg font-semibold rounded-xl transition-colors shadow-lg hover:shadow-xl"
-            >
-              <Play className="w-6 h-6" />
-              Start Reading
-            </button>
+            {/* Action Buttons */}
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={onStartReading}
+                className="inline-flex items-center gap-2 px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white text-lg font-semibold rounded-xl transition-colors shadow-lg hover:shadow-xl"
+              >
+                <Play className="w-6 h-6" />
+                Start Reading
+              </button>
+
+              {/* Offline Download Button */}
+              {book.source !== 'pdf' && book.source !== 'epub' && (
+                offlineStatus === 'available' ? (
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-2 px-4 py-3 bg-green-900/30 border border-green-700 text-green-400 rounded-xl text-sm">
+                      <CheckCircle className="w-5 h-5" />
+                      Available Offline
+                    </span>
+                    <button
+                      onClick={handleRemoveOffline}
+                      className="p-3 text-slate-400 hover:text-red-400 hover:bg-red-900/20 rounded-xl transition-colors"
+                      title="Remove offline copy"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
+                ) : isDownloading === book.id ? (
+                  <button
+                    disabled
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-slate-700 text-slate-300 rounded-xl cursor-wait"
+                  >
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Downloading...
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleDownloadOffline}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-xl transition-colors"
+                  >
+                    <Download className="w-5 h-5" />
+                    Download for Offline
+                  </button>
+                )
+              )}
+            </div>
           </div>
         </div>
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useDrag } from '@use-gesture/react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -14,6 +15,7 @@ import {
   Type,
 } from 'lucide-react';
 import { Modal } from '../common';
+import { hapticPageTurn } from '../../utils/native';
 import type { PageContent, ReadingMode, ReaderSettings, Bookmark as BookmarkType, FontFamily } from '../../types';
 import './PageFlipAnimation.css';
 
@@ -119,9 +121,9 @@ export function SimpleReader({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Touch swipe navigation
-  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const contentAreaRef = useRef<HTMLDivElement>(null);
+  const [dragX, setDragX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Keyboard navigation
   useEffect(() => {
@@ -175,39 +177,52 @@ export function SimpleReader({
     }, 500);
   }, [currentPage, isWideScreen, onPageChange, isFlipping]);
 
-  // Touch swipe effect
-  useEffect(() => {
-    const el = contentAreaRef.current;
-    if (!el) return;
+  // Swipe gesture via @use-gesture/react
+  const SWIPE_THRESHOLD = 60;
+  const VELOCITY_THRESHOLD = 0.3;
+  const RUBBER_BAND_FACTOR = 0.3;
 
-    const onTouchStart = (e: TouchEvent) => {
-      touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    };
-
-    const onTouchEnd = (e: TouchEvent) => {
-      if (!touchStartRef.current) return;
-      const dx = e.changedTouches[0].clientX - touchStartRef.current.x;
-      const dy = e.changedTouches[0].clientY - touchStartRef.current.y;
-      const absDx = Math.abs(dx);
-      const absDy = Math.abs(dy);
-      touchStartRef.current = null;
-
-      if (absDx > 50 && absDx > absDy * 1.5) {
-        if (dx < 0) {
-          handleNext();
-        } else {
-          handlePrev();
-        }
+  const bindDrag = useDrag(
+    ({ active, movement: [mx], velocity: [vx], direction: [dx], cancel }) => {
+      if (isFlipping) {
+        cancel();
+        return;
       }
-    };
 
-    el.addEventListener('touchstart', onTouchStart, { passive: true });
-    el.addEventListener('touchend', onTouchEnd, { passive: true });
-    return () => {
-      el.removeEventListener('touchstart', onTouchStart);
-      el.removeEventListener('touchend', onTouchEnd);
-    };
-  }, [handleNext, handlePrev]);
+      if (active) {
+        // Rubber-band effect at boundaries
+        const atStart = currentPage <= 1 && mx > 0;
+        const atEnd = currentPage >= totalPages && mx < 0;
+        const effectiveMx = (atStart || atEnd) ? mx * RUBBER_BAND_FACTOR : mx;
+        setDragX(effectiveMx);
+        setIsDragging(true);
+      } else {
+        setIsDragging(false);
+        const absVx = Math.abs(vx);
+        const absMx = Math.abs(mx);
+
+        // Velocity-based: fast flick needs less distance
+        const triggered =
+          (absVx > VELOCITY_THRESHOLD && absMx > 20) || absMx > SWIPE_THRESHOLD;
+
+        if (triggered) {
+          if (dx < 0 && currentPage < totalPages) {
+            hapticPageTurn();
+            handleNext();
+          } else if (dx > 0 && currentPage > 1) {
+            hapticPageTurn();
+            handlePrev();
+          }
+        }
+        setDragX(0);
+      }
+    },
+    {
+      axis: 'x',
+      filterTaps: true,
+      pointer: { touch: true },
+    }
+  );
 
   // Get page content by index
   const getPage = (pageNum: number): PageContent | null => {
@@ -291,8 +306,21 @@ export function SimpleReader({
       </div>
 
       {/* Content Area - Book */}
-      <div ref={contentAreaRef} className="flex-1 flex items-stretch px-4 md:px-8 py-4 overflow-hidden relative book-container">
-        <div className={`book-pages h-full w-full relative ${!isWideScreen ? 'single-page-mode' : ''}`}>
+      <div
+        ref={contentAreaRef}
+        {...bindDrag()}
+        className="flex-1 flex items-stretch px-4 md:px-8 py-4 overflow-hidden relative book-container"
+        style={{
+          touchAction: 'pan-y',
+        }}
+      >
+        <div
+          className={`book-pages h-full w-full relative ${!isWideScreen ? 'single-page-mode' : ''}`}
+          style={{
+            transform: dragX !== 0 ? `translateX(${dragX}px)` : undefined,
+            transition: isDragging ? 'none' : 'transform 0.3s ease-out',
+          }}
+        >
 
           {/* Two-page mode */}
           {isWideScreen ? (

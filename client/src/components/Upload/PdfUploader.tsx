@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { Upload, FileText, X, AlertCircle } from 'lucide-react';
 import { Button, Spinner } from '../common';
+import { isNative } from '../../utils/native';
 
 interface PdfUploaderProps {
   onUpload: (file: File) => Promise<void>;
@@ -88,11 +89,15 @@ export function PdfUploader({ onUpload, onEpubUpload, onMobiUpload, isLoading }:
   return (
     <div className="w-full max-w-xl mx-auto">
       <div
-        onDragEnter={handleDrag}
-        onDragLeave={handleDrag}
-        onDragOver={handleDrag}
-        onDrop={handleDrop}
-        className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all ${
+        {...(!isNative ? {
+          onDragEnter: handleDrag,
+          onDragLeave: handleDrag,
+          onDragOver: handleDrag,
+          onDrop: handleDrop,
+        } : {})}
+        className={`relative border-2 rounded-xl p-8 text-center transition-all ${
+          isNative ? 'border-slate-600' : 'border-dashed'
+        } ${
           dragActive
             ? 'border-blue-500 bg-blue-500/10'
             : 'border-slate-600 hover:border-slate-500'
@@ -101,7 +106,7 @@ export function PdfUploader({ onUpload, onEpubUpload, onMobiUpload, isLoading }:
         {isLoading ? (
           <div className="py-8">
             <Spinner size="lg" className="mx-auto" />
-            <p className="mt-4 text-slate-400">Processing PDF...</p>
+            <p className="mt-4 text-slate-400">Processing file...</p>
           </div>
         ) : selectedFile ? (
           <div className="py-4">
@@ -125,6 +130,28 @@ export function PdfUploader({ onUpload, onEpubUpload, onMobiUpload, isLoading }:
               Open File
             </Button>
           </div>
+        ) : isNative ? (
+          /* Native: large touch-friendly button instead of drag-and-drop */
+          <label className="block cursor-pointer py-6">
+            <div className="w-20 h-20 mx-auto mb-4 bg-blue-600 rounded-2xl flex items-center justify-center">
+              <Upload className="w-10 h-10 text-white" />
+            </div>
+            <p className="text-lg font-semibold text-slate-100 mb-2">
+              Select a File
+            </p>
+            <p className="text-sm text-slate-400 mb-4">
+              PDF, EPUB, MOBI, or AZW3 up to 100MB
+            </p>
+            <span className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors min-h-[48px]">
+              Browse Files
+            </span>
+            <input
+              type="file"
+              accept=".pdf,.epub,.mobi,.azw,.azw3,application/pdf,application/epub+zip"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+          </label>
         ) : (
           <>
             <Upload className="w-12 h-12 mx-auto text-slate-500 mb-4" />

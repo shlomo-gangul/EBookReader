@@ -1,5 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
+const isDev = process.env.NODE_ENV !== 'production' && !process.env.CAPACITOR_RELEASE;
+
 const config: CapacitorConfig = {
   appId: 'com.bookreader.app',
   appName: 'BookReader',
@@ -8,8 +10,8 @@ const config: CapacitorConfig = {
   // Server configuration
   server: {
     androidScheme: 'https',
-    // Point to host machine's Vite dev server (10.0.2.2 = host localhost in Android emulator)
-    url: 'http://10.0.2.2:3000',
+    // Only use dev server URL during development (10.0.2.2 = host localhost in Android emulator)
+    ...(isDev ? { url: 'http://10.0.2.2:3000' } : {}),
   },
 
   // Plugins configuration

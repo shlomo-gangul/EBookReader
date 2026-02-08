@@ -23,9 +23,30 @@ const GENRES = [
 
 const CACHE_KEY = 'popular_books_cache';
 const CACHE_DURATION = 1000 * 60 * 60; // 1 hour
-const REQUEST_DELAY = 500; // 500ms between requests to avoid rate limiting
 
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+function parseGutenbergBooks(data: { results: Array<{
+  id: number;
+  title: string;
+  authors: { name: string }[];
+  subjects: string[];
+  languages: string[];
+  formats: Record<string, string>;
+}> }): Book[] {
+  return data.results.slice(0, 6).map((book) => ({
+    id: book.id.toString(),
+    title: book.title,
+    authors: book.authors.map((a) => ({ name: a.name })),
+    coverUrl: `https://www.gutenberg.org/cache/epub/${book.id}/pg${book.id}.cover.medium.jpg`,
+    subjects: book.subjects?.slice(0, 3),
+    language: book.languages?.[0],
+    source: 'gutenberg' as const,
+    formats: {
+      text: book.formats['text/plain; charset=utf-8'] || book.formats['text/plain'],
+      html: book.formats['text/html'],
+      epub: book.formats['application/epub+zip'],
+    },
+  }));
+}
 
 export function usePopularBooks() {
   const [genreBooks, setGenreBooks] = useState<GenreBooks[]>([]);
@@ -49,48 +70,32 @@ export function usePopularBooks() {
       }
 
       setIsLoading(true);
-      const results: GenreBooks[] = [];
 
-      // Stagger requests to avoid rate limiting
-      for (const genre of GENRES) {
+      // Fetch all genres in parallel for faster loading
+      const promises = GENRES.map(async (genre) => {
         try {
           const response = await axios.get(
             `https://gutendex.com/books?topic=${genre.topic}&sort=popular`,
-            { timeout: 30000 }
+            { timeout: 15000 }
           );
-
-          const books: Book[] = response.data.results.slice(0, 6).map((book: {
-            id: number;
-            title: string;
-            authors: { name: string }[];
-            subjects: string[];
-            languages: string[];
-            formats: Record<string, string>;
-          }) => ({
-            id: book.id.toString(),
-            title: book.title,
-            authors: book.authors.map((a) => ({ name: a.name })),
-            coverUrl: `https://www.gutenberg.org/cache/epub/${book.id}/pg${book.id}.cover.medium.jpg`,
-            subjects: book.subjects?.slice(0, 3),
-            language: book.languages?.[0],
-            source: 'gutenberg' as const,
-            formats: {
-              text: book.formats['text/plain; charset=utf-8'] || book.formats['text/plain'],
-              html: book.formats['text/html'],
-              epub: book.formats['application/epub+zip'],
-            },
-          }));
-
+          const books = parseGutenbergBooks(response.data);
           if (books.length > 0) {
-            results.push({ genre: genre.name, books });
-            // Update UI progressively as genres load
-            setGenreBooks([...results]);
+            return { genre: genre.name, books };
           }
-
-          // Delay between requests to be nice to the API
-          await delay(REQUEST_DELAY);
         } catch (error) {
           console.error(`Failed to fetch ${genre.name} books:`, error);
+        }
+        return null;
+      });
+
+      const settled = await Promise.allSettled(promises);
+      const results: GenreBooks[] = [];
+
+      for (const result of settled) {
+        if (result.status === 'fulfilled' && result.value) {
+          results.push(result.value);
+          // Update UI progressively as results come in
+          setGenreBooks([...results]);
         }
       }
 

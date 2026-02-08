@@ -1,8 +1,9 @@
 import { useState, useCallback, useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, useNavigate, useParams } from 'react-router-dom';
-import { BookOpen, Upload, Library, Menu, X, TrendingUp, BookText, ScrollText } from 'lucide-react';
+import { BookOpen, Upload, Library, Menu, X, TrendingUp, BookText, ScrollText, WifiOff, Trash2, HardDrive } from 'lucide-react';
 import { SearchBar, BookGrid, BookCard } from './components/Library';
 import { PdfUploader } from './components/Upload';
+import { useOfflineBooks } from './hooks/useOfflineBooks';
 
 // Lazy load heavy components for code splitting
 const FlipBookReader = lazy(() => import('./components/Reader/FlipBookReader').then(m => ({ default: m.FlipBookReader })));
@@ -14,7 +15,7 @@ import { useBookReader } from './hooks/useBookReader';
 import { usePopularBooks } from './hooks/usePopularBooks';
 import { useReadingProgress } from './hooks/useReadingProgress';
 import { useBookStore } from './store';
-import { Spinner } from './components/common';
+import { Spinner, IOSInstallBanner } from './components/common';
 import { convertEbook, getConvertedEpubUrl } from './services/api';
 import type { Book } from './types';
 
@@ -228,6 +229,7 @@ function HomePage() {
   const { books, isLoading, hasMore, search, loadMore, clearSearch } = useLibrary();
   const { loadPdfFile, loadEpubFile, loadEpubFromUrl, isLoading: bookLoading } = useBookReader();
   const { genreBooks, isLoading: genresLoading } = usePopularBooks();
+  const { offlineBooks, storageUsed, removeBook: removeOfflineBook } = useOfflineBooks();
 
   const handleBookClick = useCallback((book: Book) => {
     saveBookToStorage(book);
@@ -377,6 +379,42 @@ function HomePage() {
           </section>
         )}
 
+        {/* Available Offline */}
+        {books.length === 0 && offlineBooks.length > 0 && (
+          <section className="mb-12">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-slate-100 flex items-center gap-2">
+                <WifiOff className="w-5 h-5 text-green-400" />
+                Available Offline
+              </h3>
+              <span className="text-sm text-slate-400 flex items-center gap-1">
+                <HardDrive className="w-4 h-4" />
+                {storageUsed} used
+              </span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {offlineBooks.map((ob) => (
+                <div key={ob.id} className="relative group">
+                  <BookCard
+                    book={ob.bookMetadata}
+                    onClick={handleBookClick}
+                  />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeOfflineBook(ob.id);
+                    }}
+                    className="absolute top-2 right-2 p-1.5 bg-red-600/80 hover:bg-red-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Remove offline copy"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-white" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Popular Books by Genre */}
         {books.length === 0 && !isLoading && (
           <>
@@ -461,11 +499,14 @@ function HomePage() {
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/book/:bookId" element={<BookDetailsPage />} />
-      <Route path="/read/:bookId" element={<ReaderPage />} />
-    </Routes>
+    <>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/book/:bookId" element={<BookDetailsPage />} />
+        <Route path="/read/:bookId" element={<ReaderPage />} />
+      </Routes>
+      <IOSInstallBanner />
+    </>
   );
 }
 

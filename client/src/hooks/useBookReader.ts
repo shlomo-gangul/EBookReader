@@ -1,8 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useBookStore } from '../store';
-import { getBookContent, getGutenbergText, getInternetArchiveText, getInternetArchiveFormats } from '../services/api';
 import { loadPdf, type PdfDocument } from '../services/pdfService';
 import { loadEpub, loadEpubFromFile, getEpubContent, type EpubDocument } from '../services/epubService';
+import { fetchBookContent } from '../services/bookContentFetcher';
+import { getOfflineBook } from '../services/offlineStorage';
 import { splitTextIntoPages } from '../utils/textProcessorWorker';
 import type { Book, PageContent } from '../types';
 
@@ -56,43 +57,16 @@ export function useBookReader(): UseBookReaderReturn {
     try {
       let content: string;
 
-      if (book.source === 'gutenberg') {
-        // Check if EPUB is available and preferred
-        if (book.formats?.epub) {
-          try {
-            // Use backend proxy to avoid CORS issues with gutenberg.org
-            const epub = await loadEpub(`/api/books/gutenberg/${book.id}/epub`);
-            epubDocRef.current = epub;
-            const chapters = await getEpubContent(epub);
-            content = chapters.join('\n\n');
-          } catch {
-            // Fall back to text if EPUB fails
-            content = await getGutenbergText(book.id);
-          }
-        } else {
-          content = await getGutenbergText(book.id);
-        }
-      } else if (book.source === 'openlibrary') {
-        content = await getBookContent(book.id, 1, book.source);
-      } else if (book.source === 'internetarchive') {
-        // Check available formats, prefer EPUB > text > PDF
-        const formats = await getInternetArchiveFormats(book.id);
-
-        if (formats.epub) {
-          try {
-            const epub = await loadEpub(formats.epub);
-            epubDocRef.current = epub;
-            const chapters = await getEpubContent(epub);
-            content = chapters.join('\n\n');
-          } catch {
-            // Fall back to text if EPUB fails
-            content = await getInternetArchiveText(book.id);
-          }
-        } else {
-          content = await getInternetArchiveText(book.id);
-        }
+      // Check offline cache first
+      const offlineBook = await getOfflineBook(book.id);
+      if (offlineBook) {
+        content = offlineBook.content;
       } else {
-        throw new Error('Unsupported book source');
+        const result = await fetchBookContent(book);
+        content = result.content;
+        if (result.epubDoc) {
+          epubDocRef.current = result.epubDoc;
+        }
       }
 
       const bookPages = await splitTextIntoPages(content);

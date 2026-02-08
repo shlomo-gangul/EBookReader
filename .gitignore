@@ -34,3 +34,13 @@ coverage/
 
 # Redis dump
 dump.rdb
+
+# Android keystore
+client/android/keystore/
+client/android/keystore.properties
+*.jks
+*.keystore
+
+# Generated icon source SVGs (intermediate files)
+client/scripts/book-icon.svg
+client/scripts/splash-icon.svg
