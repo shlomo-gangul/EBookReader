@@ -35,6 +35,12 @@ coverage/
 # Redis dump
 dump.rdb
 
+# SQLite database
+server/data/
+*.db
+*.db-wal
+*.db-shm
+
 # Android keystore
 client/android/keystore/
 client/android/keystore.properties

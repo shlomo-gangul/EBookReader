@@ -5,6 +5,7 @@ import { SearchBar, BookGrid, BookCard } from './components/Library';
 import { PdfUploader } from './components/Upload';
 import { AuthModal, UserMenu } from './components/Auth';
 import { useOfflineBooks } from './hooks/useOfflineBooks';
+import { useServiceWorker } from './hooks/useServiceWorker';
 
 // Lazy load heavy components for code splitting
 const FlipBookReader = lazy(() => import('./components/Reader/FlipBookReader').then(m => ({ default: m.FlipBookReader })));
@@ -507,6 +508,32 @@ function HomePage() {
   );
 }
 
+function UpdateBanner() {
+  const { needRefresh, applyUpdate, dismissUpdate } = useServiceWorker();
+
+  if (!needRefresh) return null;
+
+  return (
+    <div className="fixed bottom-4 left-4 right-4 z-[100] flex items-center justify-between bg-blue-600 text-white px-4 py-3 rounded-lg shadow-lg max-w-md mx-auto">
+      <span className="text-sm font-medium">Update available</span>
+      <div className="flex items-center gap-2 ml-4">
+        <button
+          onClick={dismissUpdate}
+          className="text-sm text-blue-200 hover:text-white transition-colors"
+        >
+          Later
+        </button>
+        <button
+          onClick={applyUpdate}
+          className="text-sm bg-white text-blue-600 px-3 py-1 rounded font-medium hover:bg-blue-50 transition-colors"
+        >
+          Reload
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   return (
     <>
@@ -516,6 +543,7 @@ function App() {
         <Route path="/read/:bookId" element={<ReaderPage />} />
       </Routes>
       <IOSInstallBanner />
+      <UpdateBanner />
     </>
   );
 }

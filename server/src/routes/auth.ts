@@ -2,7 +2,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
-import * as cache from '../services/cacheManager.js';
+import * as database from '../services/database.js';
 import { strictRateLimiter } from '../middleware/rateLimit.js';
 
 const router = Router();
@@ -10,31 +10,12 @@ const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 const JWT_EXPIRY = '7d';
 
-interface User {
-  id: string;
-  email: string;
-  passwordHash: string;
-  name?: string;
-  createdAt: string;
-}
-
 interface ReadingProgress {
   bookId: string;
   currentPage: number;
   totalPages: number;
   percentage: number;
   lastRead: string;
-}
-
-// Helper to get user from cache
-async function getUserByEmail(email: string): Promise<User | null> {
-  return cache.get<User>(`user:${email.toLowerCase()}`);
-}
-
-// Helper to save user to cache
-async function saveUser(user: User): Promise<void> {
-  await cache.set(`user:${user.email.toLowerCase()}`, user, 60 * 60 * 24 * 365); // 1 year
-  await cache.set(`user:id:${user.id}`, user, 60 * 60 * 24 * 365);
 }
 
 // Register
@@ -50,33 +31,28 @@ router.post('/register', strictRateLimiter, async (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
     }
 
-    const existingUser = await getUserByEmail(email);
+    const existingUser = database.getUserByEmail(email.toLowerCase());
     if (existingUser) {
       return res.status(400).json({ error: 'Email already registered' });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const user: User = {
-      id: uuidv4(),
-      email: email.toLowerCase(),
-      passwordHash,
-      name,
-      createdAt: new Date().toISOString(),
-    };
+    const id = uuidv4();
+    const createdAt = new Date().toISOString();
 
-    await saveUser(user);
+    database.createUser(id, email.toLowerCase(), passwordHash, name, createdAt);
 
-    const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, {
+    const token = jwt.sign({ userId: id, email: email.toLowerCase() }, JWT_SECRET, {
       expiresIn: JWT_EXPIRY,
     });
 
     res.json({
       token,
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        createdAt: user.createdAt,
+        id,
+        email: email.toLowerCase(),
+        name,
+        createdAt,
       },
     });
   } catch (error) {
@@ -94,12 +70,12 @@ router.post('/login', strictRateLimiter, async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    const user = await getUserByEmail(email);
+    const user = database.getUserByEmail(email.toLowerCase());
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const isValidPassword = await bcrypt.compare(password, user.passwordHash);
+    const isValidPassword = await bcrypt.compare(password, user.password_hash);
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -114,7 +90,7 @@ router.post('/login', strictRateLimiter, async (req, res) => {
         id: user.id,
         email: user.email,
         name: user.name,
-        createdAt: user.createdAt,
+        createdAt: user.created_at,
       },
     });
   } catch (error) {
@@ -129,7 +105,7 @@ router.post('/logout', (req, res) => {
 });
 
 // Get current user
-router.get('/me', async (req, res) => {
+router.get('/me', (req, res) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
@@ -140,7 +116,7 @@ router.get('/me', async (req, res) => {
 
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string };
-      const user = await cache.get<User>(`user:id:${decoded.userId}`);
+      const user = database.getUserById(decoded.userId);
 
       if (!user) {
         return res.status(401).json({ error: 'User not found' });
@@ -150,7 +126,7 @@ router.get('/me', async (req, res) => {
         id: user.id,
         email: user.email,
         name: user.name,
-        createdAt: user.createdAt,
+        createdAt: user.created_at,
       });
     } catch {
       return res.status(401).json({ error: 'Invalid token' });
@@ -162,7 +138,7 @@ router.get('/me', async (req, res) => {
 });
 
 // Get all reading progress for authenticated user
-router.get('/progress', async (req, res) => {
+router.get('/progress', (req, res) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
@@ -173,11 +149,16 @@ router.get('/progress', async (req, res) => {
 
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
-      const entries = await cache.getByPattern<ReadingProgress>(
-        `user:${decoded.userId}:progress:*`
-      );
+      const rows = database.getAllProgress(decoded.userId);
 
-      const progress = Object.values(entries);
+      const progress = rows.map((r) => ({
+        bookId: r.book_id,
+        currentPage: r.current_page,
+        totalPages: r.total_pages,
+        percentage: r.percentage,
+        lastRead: r.last_read,
+      }));
+
       res.json({ progress });
     } catch {
       return res.status(401).json({ error: 'Invalid token' });
@@ -189,7 +170,7 @@ router.get('/progress', async (req, res) => {
 });
 
 // Sync reading progress from client
-router.post('/sync', async (req, res) => {
+router.post('/sync', (req, res) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
@@ -206,10 +187,7 @@ router.post('/sync', async (req, res) => {
         return res.status(400).json({ error: 'Progress must be an array' });
       }
 
-      // Save each progress entry
-      for (const p of progress) {
-        await cache.set(`user:${decoded.userId}:progress:${p.bookId}`, p, 60 * 60 * 24 * 365);
-      }
+      database.saveProgressBatch(decoded.userId, progress);
 
       res.json({ success: true, synced: progress.length });
     } catch {
