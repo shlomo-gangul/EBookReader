@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useBookStore } from '../store';
 import { searchBooks } from '../services/api';
 import type { Book } from '../types';
@@ -9,84 +10,82 @@ interface UseLibraryReturn {
   error: string | null;
   hasMore: boolean;
   page: number;
-  search: (query: string) => Promise<void>;
-  loadMore: () => Promise<void>;
+  search: (query: string) => void;
+  loadMore: () => void;
   clearSearch: () => void;
 }
 
 export function useLibrary(): UseLibraryReturn {
-  const [books, setBooks] = useState<Book[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(false);
-  const [page, setPage] = useState(1);
-  const [currentQuery, setCurrentQuery] = useState('');
-
+  const [query, setQuery] = useState('');
+  const queryClient = useQueryClient();
   const { setSearchQuery, setSearchResults } = useBookStore();
 
-  const search = useCallback(async (query: string) => {
-    if (!query.trim()) {
-      setBooks([]);
-      setSearchQuery('');
-      setSearchResults([]);
-      return;
+  const {
+    data,
+    isFetching,
+    isError,
+    error: queryError,
+    hasNextPage,
+    fetchNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['search', query],
+    queryFn: ({ pageParam }) => searchBooks(query, pageParam as number),
+    initialPageParam: 1,
+    getNextPageParam: (last) => (last.hasMore ? last.page + 1 : undefined),
+    enabled: !!query.trim(),
+  });
+
+  const books: Book[] = useMemo(
+    () => data?.pages.flatMap((p) => p.books) ?? [],
+    [data]
+  );
+
+  // Sync with zustand store so other consumers stay in sync
+  useEffect(() => {
+    setSearchResults(books);
+  }, [books, setSearchResults]);
+
+  const search = useCallback(
+    (newQuery: string) => {
+      if (!newQuery.trim()) {
+        setQuery('');
+        setSearchQuery('');
+        setSearchResults([]);
+        return;
+      }
+      setSearchQuery(newQuery);
+      setQuery(newQuery);
+    },
+    [setSearchQuery, setSearchResults]
+  );
+
+  const loadMore = useCallback(() => {
+    if (hasNextPage && !isFetching) {
+      fetchNextPage();
     }
-
-    setIsLoading(true);
-    setError(null);
-    setCurrentQuery(query);
-    setSearchQuery(query);
-    setPage(1);
-
-    try {
-      const result = await searchBooks(query, 1);
-      setBooks(result.books);
-      setSearchResults(result.books);
-      setHasMore(result.hasMore);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Search failed';
-      setError(message);
-      setBooks([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [setSearchQuery, setSearchResults]);
-
-  const loadMore = useCallback(async () => {
-    if (isLoading || !hasMore || !currentQuery) return;
-
-    setIsLoading(true);
-    const nextPage = page + 1;
-
-    try {
-      const result = await searchBooks(currentQuery, nextPage);
-      setBooks((prev) => [...prev, ...result.books]);
-      setSearchResults([...books, ...result.books]);
-      setHasMore(result.hasMore);
-      setPage(nextPage);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to load more';
-      setError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isLoading, hasMore, currentQuery, page, books, setSearchResults]);
+  }, [hasNextPage, isFetching, fetchNextPage]);
 
   const clearSearch = useCallback(() => {
-    setBooks([]);
-    setCurrentQuery('');
+    setQuery('');
     setSearchQuery('');
     setSearchResults([]);
-    setPage(1);
-    setHasMore(false);
-    setError(null);
-  }, [setSearchQuery, setSearchResults]);
+    queryClient.removeQueries({ queryKey: ['search'] });
+  }, [setSearchQuery, setSearchResults, queryClient]);
+
+  const error = isError
+    ? queryError instanceof Error
+      ? queryError.message
+      : 'Search failed'
+    : null;
+
+  // Current page: last page fetched, or 1
+  const page = data?.pages.length ?? 1;
 
   return {
     books,
-    isLoading,
+    isLoading: isFetching,
     error,
-    hasMore,
+    hasMore: hasNextPage ?? false,
     page,
     search,
     loadMore,

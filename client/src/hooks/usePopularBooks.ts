@@ -1,15 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useQueries } from '@tanstack/react-query';
 import axios from 'axios';
 import type { Book } from '../types';
 
 interface GenreBooks {
   genre: string;
   books: Book[];
-}
-
-interface CachedData {
-  genreBooks: GenreBooks[];
-  timestamp: number;
 }
 
 const GENRES = [
@@ -20,9 +15,6 @@ const GENRES = [
   { name: 'Adventure', topic: 'adventure' },
   { name: 'History', topic: 'history' },
 ];
-
-const CACHE_KEY = 'popular_books_cache';
-const CACHE_DURATION = 1000 * 60 * 60; // 1 hour
 
 function parseGutenbergBooks(data: { results: Array<{
   id: number;
@@ -49,72 +41,28 @@ function parseGutenbergBooks(data: { results: Array<{
 }
 
 export function usePopularBooks() {
-  const [genreBooks, setGenreBooks] = useState<GenreBooks[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queries = useQueries({
+    queries: GENRES.map((genre) => ({
+      queryKey: ['popular', genre.topic],
+      queryFn: async (): Promise<GenreBooks | null> => {
+        const response = await axios.get(
+          `https://gutendex.com/books?topic=${genre.topic}&sort=popular`,
+          { timeout: 15000 }
+        );
+        const books = parseGutenbergBooks(response.data);
+        if (books.length === 0) return null;
+        return { genre: genre.name, books };
+      },
+      staleTime: 60 * 60 * 1000,
+      retry: 1,
+    })),
+  });
 
-  useEffect(() => {
-    const fetchPopularBooks = async () => {
-      // Check cache first
-      try {
-        const cached = localStorage.getItem(CACHE_KEY);
-        if (cached) {
-          const data: CachedData = JSON.parse(cached);
-          if (Date.now() - data.timestamp < CACHE_DURATION) {
-            setGenreBooks(data.genreBooks);
-            setIsLoading(false);
-            return;
-          }
-        }
-      } catch {
-        // Cache read failed, continue to fetch
-      }
+  const genreBooks: GenreBooks[] = queries
+    .map((q) => q.data)
+    .filter((d): d is GenreBooks => d != null);
 
-      setIsLoading(true);
-
-      // Fetch all genres in parallel for faster loading
-      const promises = GENRES.map(async (genre) => {
-        try {
-          const response = await axios.get(
-            `https://gutendex.com/books?topic=${genre.topic}&sort=popular`,
-            { timeout: 15000 }
-          );
-          const books = parseGutenbergBooks(response.data);
-          if (books.length > 0) {
-            return { genre: genre.name, books };
-          }
-        } catch (error) {
-          console.error(`Failed to fetch ${genre.name} books:`, error);
-        }
-        return null;
-      });
-
-      const settled = await Promise.allSettled(promises);
-      const results: GenreBooks[] = [];
-
-      for (const result of settled) {
-        if (result.status === 'fulfilled' && result.value) {
-          results.push(result.value);
-          // Update UI progressively as results come in
-          setGenreBooks([...results]);
-        }
-      }
-
-      // Cache the results
-      try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify({
-          genreBooks: results,
-          timestamp: Date.now(),
-        }));
-      } catch {
-        // Cache write failed, not critical
-      }
-
-      setGenreBooks(results);
-      setIsLoading(false);
-    };
-
-    fetchPopularBooks();
-  }, []);
+  const isLoading = queries.some((q) => q.isPending);
 
   return { genreBooks, isLoading };
 }
