@@ -310,11 +310,11 @@ Your project is a solid full-stack PWA using React + Vite + TypeScript (client) 
 - [x] 65. Background sync ✅
 
 ## PHASE 5: USER EXPERIENCE
-- [ ] 66. Text-to-Speech
-- [ ] 67. Highlighting & annotations
-- [ ] 68. Search within book
+- [x] 66. Text-to-Speech ✅
+- [x] 67. Highlighting & annotations ✅
+- [x] 68. Search within book ✅
 - [x] 74. Add SQLite database ✅
-- [ ] 78-82. Accessibility improvements
+- [x] 78-82. Accessibility improvements ✅
 
 ## PHASE 6: NICE TO HAVE
 - [ ] 83. React Query
