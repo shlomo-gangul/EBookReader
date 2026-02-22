@@ -72,6 +72,30 @@ export interface ReaderSettings {
   marginSize: 'small' | 'medium' | 'large';
   readerMode: 'flip' | 'scroll';
   highContrast?: boolean;
+  autoNightMode?: boolean;
+}
+
+export interface Collection {
+  id: string;
+  name: string;
+  bookIds: string[];
+  createdAt: string;
+}
+
+export interface ReadingSession {
+  bookId: string;
+  startPage: number;
+  endPage: number;
+  durationMs: number;
+  date: string; // YYYY-MM-DD
+}
+
+export interface GlobalStats {
+  totalSessions: number;
+  totalMs: number;
+  totalPages: number;
+  streak: number;
+  lastReadDate: string;
 }
 
 export interface PageContent {

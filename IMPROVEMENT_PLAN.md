@@ -204,11 +204,11 @@ Your project is a solid full-stack PWA using React + Vite + TypeScript (client) 
 | 66 | **Text-to-Speech (TTS)** | Web Speech API / native TTS | Accessibility + hands-free reading |
 | 67 | **Highlighting & annotations** | IndexedDB / SQLite | Select text, add notes |
 | 68 | **Search within book** | Full-text search | Find content quickly |
-| 69 | **Dictionary lookup** | Free Dictionary API | Tap word for definition |
-| 70 | **Night mode auto-switch** | `prefers-color-scheme` | Match system dark mode |
-| 71 | **Collections/shelves** | Local storage / DB | Organize books (Reading, Finished, etc.) |
-| 72 | **Reading statistics** | Track in store | Time spent, pages/day, streaks |
-| 73 | **Reading timer** | setTimeout + notification | Sleep timer, reminders |
+| 69 | **Dictionary lookup** ✅ | Free Dictionary API | Tap word for definition |
+| 70 | **Night mode auto-switch** ✅ | `prefers-color-scheme` | Match system dark mode |
+| 71 | **Collections/shelves** ✅ | Local storage / DB | Organize books (Reading, Finished, etc.) |
+| 72 | **Reading statistics** ✅ | Track in store | Time spent, pages/day, streaks |
+| 73 | **Reading timer** ✅ | setTimeout + notification | Sleep timer, reminders |
 
 ---
 
@@ -313,13 +313,16 @@ Your project is a solid full-stack PWA using React + Vite + TypeScript (client) 
 - [x] 66. Text-to-Speech ✅
 - [x] 67. Highlighting & annotations ✅
 - [x] 68. Search within book ✅
+- [x] 69. Dictionary lookup ✅
+- [x] 70. Night mode auto-switch ✅
+- [x] 71. Collections/shelves ✅
+- [x] 72. Reading statistics ✅
+- [x] 73. Reading timer ✅
 - [x] 74. Add SQLite database ✅
 - [x] 78-82. Accessibility improvements ✅
 
 ## PHASE 6: NICE TO HAVE
 - [ ] 83. React Query
-- [ ] 71. Collections/shelves
-- [ ] 72. Reading statistics
 - [ ] 86. Playwright tests
 
 ---

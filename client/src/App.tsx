@@ -1,11 +1,14 @@
 import { useState, useCallback, useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, useNavigate, useParams } from 'react-router-dom';
-import { BookOpen, Upload, Library, Menu, X, TrendingUp, BookText, ScrollText, WifiOff, Trash2, HardDrive } from 'lucide-react';
+import { BookOpen, Upload, Library, Menu, X, TrendingUp, BookText, ScrollText, WifiOff, Trash2, HardDrive, BarChart2 } from 'lucide-react';
 import { SearchBar, BookGrid, BookCard } from './components/Library';
 import { PdfUploader } from './components/Upload';
 import { AuthModal, UserMenu } from './components/Auth';
 import { useOfflineBooks } from './hooks/useOfflineBooks';
 import { useServiceWorker } from './hooks/useServiceWorker';
+import { useReadingStats } from './hooks/useReadingStats';
+import { StatsModal } from './components/Stats/StatsModal';
+import { useCollections } from './hooks/useCollections';
 
 // Lazy load heavy components for code splitting
 const FlipBookReader = lazy(() => import('./components/Reader/FlipBookReader').then(m => ({ default: m.FlipBookReader })));
@@ -46,6 +49,7 @@ function ReaderPage() {
   const { bookmarks, addBookmark, removeBookmark } = useReadingProgress();
   const [initialized, setInitialized] = useState(false);
   const [isNarrowScreen, setIsNarrowScreen] = useState(window.innerWidth < 768);
+  const { startSession, endSession } = useReadingStats();
 
   useEffect(() => {
     const handleResize = () => setIsNarrowScreen(window.innerWidth < 768);
@@ -76,14 +80,25 @@ function ReaderPage() {
     initReader();
   }, [bookId, loadBook, navigate, initialized]);
 
+  // Track reading session
+  useEffect(() => {
+    if (!initialized || !bookId || pages.length === 0) return;
+    startSession(bookId, currentPage);
+    return () => {
+      endSession(currentPage);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialized, bookId]);
+
   const handleClose = useCallback(() => {
+    endSession(currentPage);
     const storedBook = loadBookFromStorage();
     if (storedBook) {
       navigate(`/book/${storedBook.id}`);
     } else {
       navigate('/');
     }
-  }, [navigate]);
+  }, [navigate, endSession, currentPage]);
 
   if (bookLoading || !initialized) {
     return (
@@ -227,6 +242,9 @@ function HomePage() {
   const navigate = useNavigate();
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showUploader, setShowUploader] = useState(false);
+  const [showStats, setShowStats] = useState(false);
+  const { getGlobalStats } = useReadingStats();
+  const { collections, getBooksForCollection } = useCollections();
 
   const { recentBooks, restoreSession } = useBookStore();
   const { books, isLoading, hasMore, search, loadMore, clearSearch } = useLibrary();
@@ -303,6 +321,13 @@ function HomePage() {
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-4">
               <button
+                onClick={() => setShowStats(true)}
+                className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors"
+              >
+                <BarChart2 className="w-5 h-5" />
+                My Stats
+              </button>
+              <button
                 onClick={() => setShowUploader(true)}
                 className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors"
               >
@@ -324,6 +349,13 @@ function HomePage() {
           {/* Mobile Menu */}
           {showMobileMenu && (
             <nav className="md:hidden mt-4 pb-2 border-t border-slate-800 pt-4 space-y-1">
+              <button
+                onClick={() => { setShowStats(true); setShowMobileMenu(false); }}
+                className="flex items-center gap-2 w-full px-4 py-2 text-slate-300 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors"
+              >
+                <BarChart2 className="w-5 h-5" />
+                My Stats
+              </button>
               <button
                 onClick={() => {
                   setShowUploader(true);
@@ -388,6 +420,32 @@ function HomePage() {
           </section>
         )}
 
+        {/* My Collections */}
+        {books.length === 0 && collections.some((c) => c.bookIds.length > 0) && (
+          <section className="mb-12">
+            <h3 className="text-xl font-semibold text-slate-100 mb-6 flex items-center gap-2">
+              <Library className="w-5 h-5 text-purple-400" />
+              My Collections
+            </h3>
+            <div className="space-y-8">
+              {collections.filter((c) => c.bookIds.length > 0).map((col) => {
+                const colBooks = getBooksForCollection(col.id);
+                if (colBooks.length === 0) return null;
+                return (
+                  <div key={col.id}>
+                    <h4 className="text-base font-medium text-slate-300 mb-3">{col.name}</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                      {colBooks.map((book) => (
+                        <BookCard key={book.id} book={book} onClick={handleBookClick} />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         {/* Available Offline */}
         {books.length === 0 && offlineBooks.length > 0 && (
           <section className="mb-12">
@@ -449,6 +507,11 @@ function HomePage() {
           </>
         )}
       </main>
+
+      {/* Stats Modal */}
+      {showStats && (
+        <StatsModal onClose={() => setShowStats(false)} getGlobalStats={getGlobalStats} />
+      )}
 
       {/* PDF Uploader Modal */}
       {showUploader && (
@@ -536,7 +599,7 @@ function UpdateBanner() {
 }
 
 function App() {
-  const { settings } = useBookStore();
+  const { settings, updateSettings } = useBookStore();
 
   // Apply high-contrast class to body
   useEffect(() => {
@@ -546,6 +609,17 @@ function App() {
       document.body.classList.remove('high-contrast');
     }
   }, [settings.highContrast]);
+
+  // Auto night mode: follow system prefers-color-scheme
+  useEffect(() => {
+    if (!settings.autoNightMode) return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const apply = (dark: boolean) => updateSettings({ mode: dark ? 'night' : 'day' });
+    apply(mq.matches);
+    const handler = (e: MediaQueryListEvent) => apply(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, [settings.autoNightMode, updateSettings]);
 
   return (
     <>

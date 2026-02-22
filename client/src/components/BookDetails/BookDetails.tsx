@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   BookOpen,
   User,
@@ -11,6 +11,8 @@ import {
   CheckCircle,
   Loader2,
   Trash2,
+  BookMarked,
+  ChevronDown,
 } from 'lucide-react';
 import { BookCard } from '../Library/BookCard';
 import { Spinner } from '../common';
@@ -18,6 +20,7 @@ import type { Book } from '../../types';
 import { searchBooks } from '../../services/api';
 import { isBookOffline } from '../../services/offlineStorage';
 import { useOfflineBooks } from '../../hooks/useOfflineBooks';
+import { useCollections } from '../../hooks/useCollections';
 
 interface BookDetailsProps {
   book: Book;
@@ -30,7 +33,23 @@ export function BookDetails({ book, onBack, onStartReading, onBookClick }: BookD
   const [relatedBooks, setRelatedBooks] = useState<Book[]>([]);
   const [isLoadingRelated, setIsLoadingRelated] = useState(true);
   const [offlineStatus, setOfflineStatus] = useState<'none' | 'available'>('none');
+  const [showCollectionMenu, setShowCollectionMenu] = useState(false);
+  const collectionMenuRef = useRef<HTMLDivElement>(null);
   const { downloadBook, isDownloading, removeBook } = useOfflineBooks();
+  const { collections, addToCollection, removeFromCollection, getCollectionsForBook } = useCollections();
+  const bookCollections = getCollectionsForBook(book.id);
+
+  // Close collection menu on outside click
+  useEffect(() => {
+    if (!showCollectionMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (collectionMenuRef.current && !collectionMenuRef.current.contains(e.target as Node)) {
+        setShowCollectionMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showCollectionMenu]);
 
   // Check offline status on mount
   useEffect(() => {
@@ -200,6 +219,39 @@ export function BookDetails({ book, onBack, onStartReading, onBookClick }: BookD
                 <Play className="w-6 h-6" />
                 Start Reading
               </button>
+
+              {/* Add to Collection */}
+              <div className="relative" ref={collectionMenuRef}>
+                <button
+                  onClick={() => setShowCollectionMenu((v) => !v)}
+                  className="inline-flex items-center gap-2 px-5 py-4 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-xl transition-colors"
+                >
+                  <BookMarked className="w-5 h-5" />
+                  {bookCollections.length > 0 ? `In ${bookCollections.length} list${bookCollections.length !== 1 ? 's' : ''}` : 'Add to List'}
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+                {showCollectionMenu && (
+                  <div className="absolute left-0 top-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-20 py-2 min-w-[180px]">
+                    {collections.map((col) => {
+                      const inCol = col.bookIds.includes(book.id);
+                      return (
+                        <button
+                          key={col.id}
+                          onClick={() => {
+                            if (inCol) removeFromCollection(col.id, book.id);
+                            else addToCollection(col.id, book);
+                            setShowCollectionMenu(false);
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-slate-700 transition-colors text-left"
+                        >
+                          <span className={`w-3 h-3 rounded-full border-2 flex-shrink-0 ${inCol ? 'bg-blue-500 border-blue-500' : 'border-slate-500'}`} />
+                          <span className={inCol ? 'text-slate-100' : 'text-slate-300'}>{col.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
 
               {/* Offline Download Button */}
               {book.source !== 'pdf' && book.source !== 'epub' && (

@@ -19,6 +19,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Trash2,
+  Timer,
 } from 'lucide-react';
 import { Modal } from '../common';
 import { hapticPageTurn } from '../../utils/native';
@@ -26,6 +27,9 @@ import { renderWithHighlights } from '../../utils/highlightText';
 import { useTextToSpeech } from '../../hooks/useTextToSpeech';
 import { useBookSearch } from '../../hooks/useBookSearch';
 import { useHighlights } from '../../hooks/useHighlights';
+import { useReadingTimer } from '../../hooks/useReadingTimer';
+import { useDictionary } from '../../hooks/useDictionary';
+import { DictionaryPopup } from './DictionaryPopup';
 import type { PageContent, ReadingMode, ReaderSettings, Bookmark as BookmarkType, FontFamily, Highlight } from '../../types';
 
 // Font family mappings
@@ -97,7 +101,8 @@ const Page = memo(forwardRef<HTMLDivElement, {
   searchMatch: { startChar: number; endChar: number } | null;
   ttsWordRange: { start: number; end: number } | null;
   onMouseUp: (pageNum: number) => void;
-}>(({ page, styles, contentStyle, pageHighlights, searchMatch, ttsWordRange, onMouseUp }, ref) => {
+  onDoubleClick?: (e: React.MouseEvent) => void;
+}>(({ page, styles, contentStyle, pageHighlights, searchMatch, ttsWordRange, onMouseUp, onDoubleClick }, ref) => {
   const isLeftPage = page.pageNumber % 2 === 0;
 
   const pageGradient = isLeftPage
@@ -136,7 +141,7 @@ const Page = memo(forwardRef<HTMLDivElement, {
         style={contentStyle}
       >
         {page.content ? (
-          <div data-page-content onMouseUp={() => onMouseUp(page.pageNumber)}>
+          <div data-page-content onMouseUp={() => onMouseUp(page.pageNumber)} onDoubleClick={onDoubleClick}>
             {renderWithHighlights(page.content, pageHighlights, searchMatch, ttsWordRange)}
           </div>
         ) : (
@@ -182,6 +187,10 @@ export function FlipBookReader({
   const tts = useTextToSpeech();
   const bookSearch = useBookSearch();
   const { highlights, addHighlight, removeHighlight, updateNote, highlightsForPage } = useHighlights(bookId ?? null);
+  const timer = useReadingTimer();
+  const [showTimerMenu, setShowTimerMenu] = useState(false);
+  const TIMER_OPTIONS = [0, 5, 10, 15, 30, 60];
+  const dict = useDictionary();
 
   // Calculate book size
   useEffect(() => {
@@ -398,6 +407,30 @@ export function FlipBookReader({
           >
             <Search className="w-5 h-5" aria-hidden="true" />
           </button>
+          {/* Timer button */}
+          <div className="relative">
+            <button
+              onClick={() => setShowTimerMenu((v) => !v)}
+              aria-label="Reading timer"
+              className={`p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors flex items-center gap-1 ${timer.isActive ? 'text-orange-400' : 'text-white'}`}
+            >
+              <Timer className="w-5 h-5" aria-hidden="true" />
+              {timer.isActive && <span className="text-xs font-mono">{timer.formattedRemaining}</span>}
+            </button>
+            {showTimerMenu && (
+              <div className="absolute right-0 top-full mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-[80] py-1 min-w-[120px]">
+                {TIMER_OPTIONS.map((min) => (
+                  <button
+                    key={min}
+                    onClick={() => { timer.start(min); setShowTimerMenu(false); }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-700 transition-colors ${timer.duration === min && timer.isActive ? 'text-orange-400' : 'text-slate-200'}`}
+                  >
+                    {min === 0 ? 'Off' : `${min} min`}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <button
             onClick={() => setShowSettings(true)}
             aria-label="Reader settings"
@@ -549,6 +582,12 @@ export function FlipBookReader({
                     : null
                 }
                 onMouseUp={handleMouseUp}
+                onDoubleClick={(e) => {
+                  const sel = window.getSelection()?.toString().trim();
+                  if (sel && sel.split(/\s+/).length === 1) {
+                    dict.lookup(sel, e.clientX, e.clientY);
+                  }
+                }}
               />
             ))}
           </HTMLFlipBook>
@@ -739,6 +778,19 @@ export function FlipBookReader({
             </label>
           </div>
 
+          <div>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings.autoNightMode ?? false}
+                onChange={(e) => onSettingsChange({ autoNightMode: e.target.checked })}
+                aria-label="Follow system theme"
+                className="w-4 h-4 rounded"
+              />
+              <span className="text-sm font-medium text-slate-300">Follow system theme</span>
+            </label>
+          </div>
+
           {tts.voices.length > 0 && (
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">TTS Voice</label>
@@ -784,6 +836,36 @@ export function FlipBookReader({
           </ul>
         )}
       </Modal>
+
+      {/* Dictionary Popup */}
+      {dict.isOpen && (
+        <DictionaryPopup
+          word={dict.word}
+          entry={dict.entry}
+          isLoading={dict.isLoading}
+          error={dict.error}
+          x={dict.x}
+          y={dict.y}
+          onClose={dict.close}
+        />
+      )}
+
+      {/* Timer Expiry Overlay */}
+      {timer.isExpired && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="bg-slate-800 rounded-2xl p-8 text-center shadow-2xl max-w-sm mx-4">
+            <Timer className="w-12 h-12 text-orange-400 mx-auto mb-4" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-slate-100 mb-2">Time's up!</h2>
+            <p className="text-slate-400 mb-6">Take a break — you've been reading for {timer.duration} minutes.</p>
+            <button
+              onClick={timer.dismiss}
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Highlights Panel */}
       <Modal isOpen={showHighlightsPanel} onClose={() => setShowHighlightsPanel(false)} title="Highlights">
