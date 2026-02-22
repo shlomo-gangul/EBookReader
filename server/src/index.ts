@@ -7,6 +7,7 @@ import pdfRouter from './routes/pdf.js';
 import ebookRouter from './routes/ebook.js';
 import sessionRouter from './routes/session.js';
 import authRouter from './routes/auth.js';
+import highlightsRouter from './routes/highlights.js';
 import { rateLimiter } from './middleware/rateLimit.js';
 
 const app = express();
@@ -25,6 +26,7 @@ app.use('/api/pdf', pdfRouter);
 app.use('/api/ebook', ebookRouter);
 app.use('/api/session', sessionRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/highlights', highlightsRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {

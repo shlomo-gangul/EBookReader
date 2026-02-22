@@ -305,15 +305,15 @@ Your project is a solid full-stack PWA using React + Vite + TypeScript (client) 
 - [ ] 58-62. App store deployment
 
 ## PHASE 4: FEATURES & SYNC
-- [ ] 63. Connect existing auth system
-- [ ] 64. Cloud progress sync
-- [ ] 65. Background sync
+- [x] 63. Connect existing auth system ✅
+- [x] 64. Cloud progress sync ✅
+- [x] 65. Background sync ✅
 
 ## PHASE 5: USER EXPERIENCE
 - [ ] 66. Text-to-Speech
 - [ ] 67. Highlighting & annotations
 - [ ] 68. Search within book
-- [ ] 74. Add SQLite database
+- [x] 74. Add SQLite database ✅
 - [ ] 78-82. Accessibility improvements
 
 ## PHASE 6: NICE TO HAVE

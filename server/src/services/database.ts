@@ -36,7 +36,32 @@ db.exec(`
     PRIMARY KEY (user_id, book_id),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
   );
+
+  CREATE TABLE IF NOT EXISTS highlights (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    book_id TEXT NOT NULL,
+    page_number INTEGER NOT NULL,
+    start_char INTEGER NOT NULL,
+    end_char INTEGER NOT NULL,
+    color TEXT NOT NULL DEFAULT '#fef08a',
+    note TEXT,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  );
 `);
+
+export interface DbHighlight {
+  id: string;
+  user_id: string;
+  book_id: string;
+  page_number: number;
+  start_char: number;
+  end_char: number;
+  color: string;
+  note: string | null;
+  created_at: string;
+}
 
 // Prepared statements
 const stmts = {
@@ -59,6 +84,19 @@ const stmts = {
   ),
   getAllProgress: db.prepare(
     'SELECT * FROM reading_progress WHERE user_id = ?'
+  ),
+  getHighlights: db.prepare(
+    'SELECT * FROM highlights WHERE user_id = ? AND book_id = ? ORDER BY page_number, start_char'
+  ),
+  saveHighlight: db.prepare(`
+    INSERT INTO highlights (id, user_id, book_id, page_number, start_char, end_char, color, note, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      color = excluded.color,
+      note = excluded.note
+  `),
+  deleteHighlight: db.prepare(
+    'DELETE FROM highlights WHERE id = ? AND user_id = ?'
   ),
 };
 
@@ -126,6 +164,28 @@ export function saveProgressBatch(
     }
   });
   transaction();
+}
+
+export function getHighlights(userId: string, bookId: string): DbHighlight[] {
+  return stmts.getHighlights.all(userId, bookId) as DbHighlight[];
+}
+
+export function saveHighlight(
+  id: string,
+  userId: string,
+  bookId: string,
+  pageNumber: number,
+  startChar: number,
+  endChar: number,
+  color: string,
+  note: string | null,
+  createdAt: string
+): void {
+  stmts.saveHighlight.run(id, userId, bookId, pageNumber, startChar, endChar, color, note, createdAt);
+}
+
+export function deleteHighlight(id: string, userId: string): void {
+  stmts.deleteHighlight.run(id, userId);
 }
 
 export function closeDb(): void {

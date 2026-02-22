@@ -161,6 +161,7 @@ function ReaderPage() {
           totalPages={pages.length}
           settings={settings}
           bookmarks={bookmarks}
+          bookId={bookId}
           onPageChange={setCurrentPage}
           onSettingsChange={updateSettings}
           onAddBookmark={() => addBookmark()}
@@ -340,7 +341,7 @@ function HomePage() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main id="main-content" className="container mx-auto px-4 py-8">
         {/* Search Section */}
         <section className="mb-12">
           <div className="text-center mb-8">
@@ -535,8 +536,26 @@ function UpdateBanner() {
 }
 
 function App() {
+  const { settings } = useBookStore();
+
+  // Apply high-contrast class to body
+  useEffect(() => {
+    if (settings.highContrast) {
+      document.body.classList.add('high-contrast');
+    } else {
+      document.body.classList.remove('high-contrast');
+    }
+  }, [settings.highContrast]);
+
   return (
     <>
+      {/* Skip navigation link */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[200] focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/book/:bookId" element={<BookDetailsPage />} />

@@ -64,8 +64,6 @@ export interface User {
 
 export type ReadingMode = 'day' | 'night' | 'sepia';
 
-export type FontFamily = 'serif' | 'sans' | 'georgia' | 'literata';
-
 export interface ReaderSettings {
   mode: ReadingMode;
   fontSize: number;
@@ -73,6 +71,7 @@ export interface ReaderSettings {
   lineHeight: number;
   marginSize: 'small' | 'medium' | 'large';
   readerMode: 'flip' | 'scroll';
+  highContrast?: boolean;
 }
 
 export interface PageContent {
@@ -93,3 +92,16 @@ export interface ChapterInfo {
   title: string;
   startPage: number;
 }
+
+export interface Highlight {
+  id: string;
+  bookId: string;
+  pageNumber: number;
+  startChar: number;
+  endChar: number;
+  color: string;
+  note?: string;
+  createdAt: string;
+}
+
+export type FontFamily = 'serif' | 'sans' | 'georgia' | 'literata' | 'opendyslexic';

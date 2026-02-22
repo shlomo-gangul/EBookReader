@@ -2,6 +2,84 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Screen-reader only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.focus\:not-sr-only:focus {
+  position: fixed;
+  width: auto;
+  height: auto;
+  padding: 0.5rem 1rem;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+/* High contrast mode */
+.high-contrast {
+  --hc-bg: #000;
+  --hc-text: #fff;
+  --hc-border: #fff;
+  background-color: var(--hc-bg) !important;
+  color: var(--hc-text) !important;
+}
+
+.high-contrast * {
+  border-color: var(--hc-border) !important;
+  outline-color: #ff0 !important;
+}
+
+.high-contrast .bg-white,
+.high-contrast .bg-slate-800,
+.high-contrast .bg-slate-900,
+.high-contrast .bg-slate-950,
+.high-contrast .bg-gray-100,
+.high-contrast .bg-amber-50,
+.high-contrast .bg-amber-100 {
+  background-color: #000 !important;
+}
+
+.high-contrast .text-slate-100,
+.high-contrast .text-slate-200,
+.high-contrast .text-slate-300,
+.high-contrast .text-slate-400,
+.high-contrast .text-slate-900,
+.high-contrast .text-gray-900,
+.high-contrast .text-amber-900 {
+  color: #fff !important;
+}
+
+.high-contrast a {
+  color: #ff0 !important;
+  text-decoration: underline !important;
+}
+
+.high-contrast button:focus-visible,
+.high-contrast input:focus-visible {
+  outline: 3px solid #ff0 !important;
+  outline-offset: 2px !important;
+}
+
+/* OpenDyslexic font — loaded via CDN */
+@font-face {
+  font-family: 'OpenDyslexic';
+  src: url('https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/fonts/OpenDyslexic-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
