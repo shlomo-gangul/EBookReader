@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
+import { ZodError } from 'zod';
 import * as database from '../services/database.js';
+import { CreateHighlightSchema } from '../schemas/highlights.js';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
@@ -39,11 +41,17 @@ router.post('/', (req, res) => {
   const userId = getUserId(req.headers.authorization);
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
-  const { id, bookId, pageNumber, startChar, endChar, color, note, createdAt } = req.body;
-
-  if (!id || !bookId || pageNumber == null || startChar == null || endChar == null) {
-    return res.status(400).json({ error: 'Missing required fields' });
+  let parsed;
+  try {
+    parsed = CreateHighlightSchema.parse(req.body);
+  } catch (err) {
+    if (err instanceof ZodError) {
+      return res.status(400).json({ error: err.issues[0]?.message ?? 'Invalid input' });
+    }
+    throw err;
   }
+
+  const { id, bookId, pageNumber, startChar, endChar, color, note, createdAt } = parsed;
 
   database.saveHighlight(
     id,
@@ -52,7 +60,7 @@ router.post('/', (req, res) => {
     pageNumber,
     startChar,
     endChar,
-    color ?? '#fef08a',
+    color,
     note ?? null,
     createdAt ?? new Date().toISOString()
   );

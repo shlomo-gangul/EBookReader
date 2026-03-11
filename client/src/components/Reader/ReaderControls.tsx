@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import * as Tooltip from '@radix-ui/react-tooltip';
 import {
   ChevronLeft,
   ChevronRight,
@@ -72,24 +73,57 @@ export function ReaderControls({
       {/* Top Bar */}
       <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/50 to-transparent p-4">
         <div className="flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <Home className="w-5 h-5" />
-          </Button>
+          <Tooltip.Root>
+            <Tooltip.Trigger asChild>
+              <Button variant="ghost" size="sm" onClick={onClose} aria-label="Go home">
+                <Home className="w-5 h-5" />
+              </Button>
+            </Tooltip.Trigger>
+            <Tooltip.Content className="bg-slate-700 text-slate-100 text-xs px-2 py-1 rounded shadow-lg z-50" sideOffset={4}>
+              Home
+              <Tooltip.Arrow className="fill-slate-700" />
+            </Tooltip.Content>
+          </Tooltip.Root>
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onAddBookmark}
-              className={isBookmarked ? 'text-yellow-400' : ''}
-            >
-              <Bookmark className="w-5 h-5" fill={isBookmarked ? 'currentColor' : 'none'} />
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => setShowBookmarks(true)}>
-              <span className="text-sm">{bookmarks.length}</span>
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => setShowSettings(true)}>
-              <Settings className="w-5 h-5" />
-            </Button>
+            <Tooltip.Root>
+              <Tooltip.Trigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onAddBookmark}
+                  className={isBookmarked ? 'text-yellow-400' : ''}
+                  aria-label={isBookmarked ? 'Remove bookmark' : 'Add bookmark'}
+                >
+                  <Bookmark className="w-5 h-5" fill={isBookmarked ? 'currentColor' : 'none'} />
+                </Button>
+              </Tooltip.Trigger>
+              <Tooltip.Content className="bg-slate-700 text-slate-100 text-xs px-2 py-1 rounded shadow-lg z-50" sideOffset={4}>
+                {isBookmarked ? 'Remove Bookmark' : 'Add Bookmark'}
+                <Tooltip.Arrow className="fill-slate-700" />
+              </Tooltip.Content>
+            </Tooltip.Root>
+            <Tooltip.Root>
+              <Tooltip.Trigger asChild>
+                <Button variant="ghost" size="sm" onClick={() => setShowBookmarks(true)} aria-label="Show bookmarks">
+                  <span className="text-sm">{bookmarks.length}</span>
+                </Button>
+              </Tooltip.Trigger>
+              <Tooltip.Content className="bg-slate-700 text-slate-100 text-xs px-2 py-1 rounded shadow-lg z-50" sideOffset={4}>
+                Bookmarks
+                <Tooltip.Arrow className="fill-slate-700" />
+              </Tooltip.Content>
+            </Tooltip.Root>
+            <Tooltip.Root>
+              <Tooltip.Trigger asChild>
+                <Button variant="ghost" size="sm" onClick={() => setShowSettings(true)} aria-label="Reader settings">
+                  <Settings className="w-5 h-5" />
+                </Button>
+              </Tooltip.Trigger>
+              <Tooltip.Content className="bg-slate-700 text-slate-100 text-xs px-2 py-1 rounded shadow-lg z-50" sideOffset={4}>
+                Settings
+                <Tooltip.Arrow className="fill-slate-700" />
+              </Tooltip.Content>
+            </Tooltip.Root>
           </div>
         </div>
       </div>

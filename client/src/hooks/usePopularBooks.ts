@@ -1,6 +1,7 @@
 import { useQueries } from '@tanstack/react-query';
 import axios from 'axios';
 import type { Book } from '../types';
+import { GutenbergResponseSchema } from '../schemas/books';
 
 interface GenreBooks {
   genre: string;
@@ -49,7 +50,11 @@ export function usePopularBooks() {
           `https://gutendex.com/books?topic=${genre.topic}&sort=popular`,
           { timeout: 15000 }
         );
-        const books = parseGutenbergBooks(response.data);
+        const parsed = GutenbergResponseSchema.safeParse(response.data);
+        if (!parsed.success) {
+          console.warn('[usePopularBooks] Zod parse error:', parsed.error.flatten());
+        }
+        const books = parseGutenbergBooks(parsed.success ? parsed.data : response.data);
         if (books.length === 0) return null;
         return { genre: genre.name, books };
       },

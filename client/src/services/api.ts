@@ -1,5 +1,6 @@
 import axios from 'axios';
 import type { Book, SearchResult, ReadingProgress, PdfUploadResult } from '../types';
+import { AuthResponseSchema, SearchResultSchema } from '../schemas/api';
 
 const api = axios.create({
   baseURL: '/api',
@@ -9,7 +10,12 @@ const api = axios.create({
 // Books API
 export const searchBooks = async (query: string, page = 1): Promise<SearchResult> => {
   const { data } = await api.get('/books/search', { params: { q: query, page } });
-  return data;
+  const parsed = SearchResultSchema.safeParse(data);
+  if (!parsed.success) {
+    console.warn('[api.searchBooks] Zod parse error:', parsed.error.flatten());
+    return data;
+  }
+  return parsed.data;
 };
 
 export const getBook = async (id: string, source: string): Promise<Book> => {
@@ -88,7 +94,7 @@ export const endSession = async (sessionId: string): Promise<void> => {
 // Auth API
 export const login = async (email: string, password: string): Promise<{ token: string }> => {
   const { data } = await api.post('/auth/login', { email, password });
-  return data;
+  return AuthResponseSchema.parse(data);
 };
 
 export const register = async (
@@ -97,7 +103,7 @@ export const register = async (
   name?: string
 ): Promise<{ token: string }> => {
   const { data } = await api.post('/auth/register', { email, password, name });
-  return data;
+  return AuthResponseSchema.parse(data);
 };
 
 export const logout = async (): Promise<void> => {

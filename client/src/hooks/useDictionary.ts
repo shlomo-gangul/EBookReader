@@ -1,14 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-
-interface DictionaryEntry {
-  word: string;
-  phonetic?: string;
-  meanings: {
-    partOfSpeech: string;
-    definitions: { definition: string }[];
-  }[];
-}
+import { DictionaryEntrySchema } from '../schemas/api';
+import type { DictionaryEntry } from '../schemas/api';
 
 export function useDictionary() {
   const [word, setWord] = useState('');
@@ -23,8 +16,13 @@ export function useDictionary() {
         `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`
       );
       if (!res.ok) return null;
-      const data: DictionaryEntry[] = await res.json();
-      return data[0] ?? null;
+      const raw = await res.json();
+      const parsed = DictionaryEntrySchema.safeParse(raw[0]);
+      if (!parsed.success) {
+        console.warn('[useDictionary] Zod parse error:', parsed.error.flatten());
+        return raw[0] ?? null;
+      }
+      return parsed.data;
     },
     enabled: !!word,
     staleTime: Infinity,

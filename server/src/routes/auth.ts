@@ -2,8 +2,10 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
+import { ZodError } from 'zod';
 import * as database from '../services/database.js';
 import { strictRateLimiter } from '../middleware/rateLimit.js';
+import { LoginSchema, RegisterSchema } from '../schemas/auth.js';
 
 const router = Router();
 
@@ -21,15 +23,16 @@ interface ReadingProgress {
 // Register
 router.post('/register', strictRateLimiter, async (req, res) => {
   try {
-    const { email, password, name } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+    let parsed;
+    try {
+      parsed = RegisterSchema.parse(req.body);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        return res.status(400).json({ error: err.issues[0]?.message ?? 'Invalid input' });
+      }
+      throw err;
     }
-
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters' });
-    }
+    const { email, password, name } = parsed;
 
     const existingUser = database.getUserByEmail(email.toLowerCase());
     if (existingUser) {
@@ -64,11 +67,16 @@ router.post('/register', strictRateLimiter, async (req, res) => {
 // Login
 router.post('/login', strictRateLimiter, async (req, res) => {
   try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+    let parsed;
+    try {
+      parsed = LoginSchema.parse(req.body);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        return res.status(400).json({ error: err.issues[0]?.message ?? 'Invalid input' });
+      }
+      throw err;
     }
+    const { email, password } = parsed;
 
     const user = database.getUserByEmail(email.toLowerCase());
     if (!user) {

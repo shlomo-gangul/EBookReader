@@ -322,8 +322,11 @@ Your project is a solid full-stack PWA using React + Vite + TypeScript (client) 
 - [x] 78-82. Accessibility improvements ✅
 
 ## PHASE 6: NICE TO HAVE
-- [ ] 83. React Query
-- [ ] 86. Playwright tests
+- [x] 83. React Query ✅
+- [x] 84. Zod validation ✅
+- [x] 85. Radix UI component library ✅
+- [x] 86. Playwright tests ✅
+- [x] 87. Storybook ✅
 
 ---
 
